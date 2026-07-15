@@ -20,7 +20,7 @@ create table if not exists movies (
   certification text,
   adult boolean,
   poster_path text,
-  embedding vector(384)
+  embedding vector(768)
 );
 
 create table if not exists sessions (
@@ -62,7 +62,7 @@ create table if not exists feedback (
 
 -- Create match_movies function for vector similarity
 create or replace function match_movies (
-  query_embedding vector(384),
+  query_embedding vector(768),
   match_threshold float,
   match_count int
 )

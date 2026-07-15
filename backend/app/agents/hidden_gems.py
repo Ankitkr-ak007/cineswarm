@@ -5,18 +5,25 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 from app.core.config import settings
 from app.db.supabase import get_supabase_client
 import structlog
-from sentence_transformers import SentenceTransformer
 
 logger = structlog.get_logger(__name__)
-
-# Load model globally to avoid reloading on every request
-_model = None
-def get_embedding_model():
-    global _model
-    if _model is None:
-        logger.info("Loading sentence-transformer model (all-MiniLM-L6-v2)...")
-        _model = SentenceTransformer('all-MiniLM-L6-v2')
-    return _model
+async def get_gemini_embedding(text: str) -> list[float]:
+    if not text:
+        return [0.0] * 768
+    
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key={settings.GEMINI_API_KEY}"
+    headers = {"Content-Type": "application/json"}
+    payload = {
+        "model": "models/text-embedding-004",
+        "content": {"parts": [{"text": text}]},
+        "outputDimensionality": 768
+    }
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, headers=headers, json=payload, timeout=30.0)
+        response.raise_for_status()
+        data = response.json()
+        return data["embedding"]["values"]
 
 class HiddenGemsOutput(BaseModel):
     score: float
@@ -48,9 +55,11 @@ async def run_hidden_gems_agent(movie_metadata: dict, session_id: str) -> Hidden
     tmdb_id = movie_metadata.get("id", 0)
 
     # 1. Generate embedding for current movie
-    model = get_embedding_model()
-    # Ensure it's a list of floats
-    embedding = model.encode(overview).tolist() if overview else [0.0]*384
+    try:
+        embedding = await get_gemini_embedding(overview)
+    except Exception as e:
+        log.error("Failed to get Gemini embedding", error=str(e))
+        embedding = [0.0] * 768
 
     # 2. Persist to DB (batch once when movie enters, as requested)
     supabase = get_supabase_client()
