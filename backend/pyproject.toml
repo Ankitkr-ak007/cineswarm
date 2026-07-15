@@ -1,0 +1,11 @@
+[project]
+name = "cineswarm-backend"
+version = "0.1.0"
+description = "CineSwarm backend API"
+authors = [
+    {name = "CineSwarm Team", email = "team@cineswarm.local"}
+]
+dependencies = [
+    "fastapi>=0.111.0",
+]
+requires-python = ">=3.12"
