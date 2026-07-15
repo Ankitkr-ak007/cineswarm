@@ -50,4 +50,36 @@ async def fetch_movie_metadata(title: str) -> dict:
         if not data.get("results"):
             raise MovieNotFoundError(f"Movie '{title}' not found.")
             
-        return data["results"][0]
+        movie_id = data["results"][0]["id"]
+        
+        # Now fetch details with release_dates to get certification
+        details_url = f"https://api.themoviedb.org/3/movie/{movie_id}"
+        details_params = {
+            "api_key": settings.TMDB_API_KEY,
+            "append_to_response": "release_dates",
+            "language": "en-US"
+        }
+        
+        try:
+            details_resp = await client.get(details_url, params=details_params, headers=headers, timeout=10.0)
+            details_resp.raise_for_status()
+        except httpx.HTTPError:
+            # Fallback to just the search result if details fail
+            return data["results"][0]
+            
+        details_data = details_resp.json()
+        
+        # Extract US certification
+        certification = None
+        release_dates = details_data.get("release_dates", {}).get("results", [])
+        for rd in release_dates:
+            if rd.get("iso_3166_1") == "US":
+                for release in rd.get("release_dates", []):
+                    if release.get("certification"):
+                        certification = release.get("certification")
+                        break
+                if certification:
+                    break
+                    
+        details_data["certification"] = certification
+        return details_data
