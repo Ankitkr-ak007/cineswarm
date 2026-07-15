@@ -1,5 +1,8 @@
 -- Alter movies table to change embedding from vector(384) to vector(768)
-ALTER TABLE movies ALTER COLUMN embedding TYPE vector(768);
+-- Existing 384-dim embeddings can't be resized in-place; discard them and regenerate.
+ALTER TABLE movies
+  ALTER COLUMN embedding TYPE vector(768)
+  USING NULL::vector(768);
 
 -- Update match_movies function to accept vector(768)
 CREATE OR REPLACE FUNCTION match_movies (
