@@ -1,19 +1,18 @@
 import json
 import httpx
-import structlog
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from app.core.config import settings
 from app.api.models import EvaluateResponse
+import structlog
 
 logger = structlog.get_logger(__name__)
 
-SYSTEM_PROMPT = """You are a professional film critic evaluating one candidate movie.
-Assess narrative craft, direction, pacing, and performances only —
-not personal taste. Be specific and willing to be negative.
+SYSTEM_PROMPT = """You are a Vibes analyst evaluating one candidate movie.
+Assess how well the movie fits the user's stated mood/context.
+Ignore objective quality (like plot holes) and focus strictly on the atmosphere, aesthetic, and emotional resonance.
 Output strictly as JSON: {"score": <1-10>, "reasoning": "<2-3 sentences>", "verdict": "<one line>"}"""
 
 class GroqError(Exception):
-    """Raised when Groq API call fails."""
     pass
 
 @retry(
@@ -21,20 +20,17 @@ class GroqError(Exception):
     wait=wait_exponential(multiplier=1, min=2, max=10),
     retry=retry_if_exception_type((httpx.RequestError, GroqError))
 )
-async def run_critic_agent(movie_metadata: dict, session_id: str = "default") -> EvaluateResponse:
-    """Runs the critic agent against the provided movie metadata."""
-    log = logger.bind(session_id=session_id, agent="critic")
-    log.info("Starting critic agent evaluation")
+async def run_vibes_agent(movie_metadata: dict, mood: str, session_id: str) -> EvaluateResponse:
+    log = logger.bind(session_id=session_id, agent="vibes")
+    log.info("Starting vibes agent evaluation")
     
     if not settings.GROQ_API_KEY:
         raise ValueError("GROQ_API_KEY is not set")
     
-    # We pass some context to the model so it knows what to evaluate
     title = movie_metadata.get("title", "Unknown")
     overview = movie_metadata.get("overview", "")
-    release_date = movie_metadata.get("release_date", "Unknown")
     
-    user_prompt = f"Evaluate the movie: '{title}' ({release_date}). Overview: {overview}"
+    user_prompt = f"Evaluate the movie: '{title}'. Overview: {overview}\nUser's stated mood: {mood}"
 
     url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {
@@ -42,29 +38,30 @@ async def run_critic_agent(movie_metadata: dict, session_id: str = "default") ->
         "Content-Type": "application/json"
     }
     payload = {
-        "model": "llama-3.3-70b-versatile", # Based on ADR-003: Groq (Llama 3.3 70B)
+        "model": "llama-3.3-70b-versatile",
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_prompt}
         ],
         "response_format": {"type": "json_object"},
-        "temperature": 0.3
+        "temperature": 0.5
     }
 
     async with httpx.AsyncClient() as client:
         try:
             response = await client.post(url, headers=headers, json=payload, timeout=30.0)
             response.raise_for_status()
-        except httpx.HTTPStatusError as e:
-            raise GroqError(f"HTTP Error from Groq: {e.response.text}")
-        except httpx.RequestError as e:
-            raise GroqError(f"Request Error to Groq: {str(e)}")
+        except httpx.HTTPError as e:
+            log.error("Groq API error", error=str(e))
+            raise GroqError(f"Groq API Error: {str(e)}")
 
         data = response.json()
         content = data["choices"][0]["message"]["content"]
         
         try:
             parsed = json.loads(content)
+            log.info("Vibes evaluation complete", score=parsed.get("score"))
             return EvaluateResponse(**parsed)
         except (json.JSONDecodeError, ValueError) as e:
-            raise GroqError(f"Failed to parse or validate JSON from Groq: {content}. Error: {e}")
+            log.error("JSON decode error", error=str(e), content=content)
+            raise GroqError(f"Failed to parse JSON: {e}")
