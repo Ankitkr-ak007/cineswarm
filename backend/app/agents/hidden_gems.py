@@ -58,7 +58,8 @@ async def run_hidden_gems_agent(movie_metadata: dict, session_id: str) -> Hidden
     try:
         embedding = await get_gemini_embedding(overview)
     except Exception as e:
-        log.error("Failed to get Gemini embedding", error=str(e))
+        status_code = getattr(getattr(e, "response", None), "status_code", None)
+        log.error("Failed to get Gemini embedding", error_type=type(e).__name__, status_code=status_code)
         embedding = [0.0] * 768
 
     # 2. Persist to DB (batch once when movie enters, as requested)
