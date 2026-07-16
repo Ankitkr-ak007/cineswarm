@@ -15,4 +15,11 @@ class RecommendRequest(BaseModel):
 
 class RecommendResponse(BaseModel):
     session_id: str = Field(..., description="A unique identifier for the recommendation session.")
-    recommendations: list[str] = Field(..., description="A list of recommended movies.")
+
+class VerifyPinRequest(BaseModel):
+    user_id: str = Field(..., description="The user's UUID.")
+    pin: str = Field(..., description="The plaintext PIN to verify.")
+
+class VerifyPinResponse(BaseModel):
+    success: bool
+    message: str

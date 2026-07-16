@@ -1,9 +1,11 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from app.api.models import EvaluateRequest, EvaluateResponse, RecommendRequest, RecommendResponse
 from app.core.tmdb import fetch_movie_metadata, MovieNotFoundError, TMDBError
 from app.agents.critic import run_critic_agent, GroqError
 from app.api.ws import router as ws_router, session_states
+from app.api.auth import router as auth_router
 from app.core.safety import is_safe_for_kids
 from app.db.supabase import get_supabase_client
 import logging
@@ -18,10 +20,20 @@ logger = structlog.get_logger(__name__)
 
 limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="CineSwarm API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # In prod, restrict this to frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.include_router(ws_router)
+app.include_router(auth_router)
 
 @app.get("/")
 def read_root():
