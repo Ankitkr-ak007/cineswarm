@@ -119,7 +119,6 @@ async def submit_feedback(request: Request, body: FeedbackRequest):
             "comment": body.comment
         }).execute()
         return FeedbackResponse(success=True)
-    except Exception as e:
+    except Exception:
         log.exception("Error submitting feedback")
         raise HTTPException(status_code=500, detail="Failed to save feedback")
-

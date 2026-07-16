@@ -56,12 +56,12 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
         log.error("Error during graph execution", error=str(e))
         try:
             await websocket.send_json({"error": "Internal server error during execution"})
-        except:
+        except Exception:
             pass
     finally:
         active_sessions.pop(session_id, None)
         session_states.pop(session_id, None)
         try:
             await websocket.close()
-        except:
+        except Exception:
             pass

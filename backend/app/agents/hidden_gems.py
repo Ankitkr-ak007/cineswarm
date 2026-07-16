@@ -80,7 +80,7 @@ async def run_hidden_gems_agent(movie_metadata: dict, session_id: str) -> Hidden
                 "embedding": embedding
             }
             # Ignore errors if it already exists or if schema is missing, but log it
-            res = supabase.table("movies").upsert(movie_data).execute()
+            supabase.table("movies").upsert(movie_data).execute()
             
             # Find similar movies (match_movies RPC)
             # Assuming match_movies returns tmdb_id, title, similarity
