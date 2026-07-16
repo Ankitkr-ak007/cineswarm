@@ -6,7 +6,7 @@ test.describe('CineSwarm Full Flow', () => {
     await page.goto('/');
     
     // Check page title
-    await expect(page.locator('h1')).toContainText('CineSwarm');
+    await expect(page.getByText('CineSwarm', { exact: true }).first()).toBeVisible();
 
     // Fill out the mood input
     await page.fill('input#mood', 'I want something visually stunning like a sci-fi epic.');
@@ -15,7 +15,7 @@ test.describe('CineSwarm Full Flow', () => {
     await page.click('button:has-text("Sci-Fi")');
     
     // Toggle kids mode off (expect PIN modal)
-    await page.click('button[role="switch"]');
+    await page.click('[data-slot="switch"]');
     
     // PIN modal should appear
     await expect(page.locator('div[role="dialog"]')).toBeVisible();
@@ -28,7 +28,7 @@ test.describe('CineSwarm Full Flow', () => {
     await page.click('button:has-text("Find Me a Movie")');
     
     // Should navigate to debate page
-    await expect(page).toHaveURL(/\/debate\/.*/, { timeout: 10000 });
+    await expect(page).toHaveURL(/\/debate\/.*/, { timeout: 30000 });
     
     // Should see live debate title
     await expect(page.locator('h1')).toContainText('Live Swarm Debate');

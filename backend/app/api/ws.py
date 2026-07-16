@@ -11,7 +11,7 @@ active_sessions: Dict[str, WebSocket] = {}
 # To pass state between the POST endpoint and the WS endpoint
 session_states: Dict[str, dict] = {}
 
-@router.websocket("/ws/session/{session_id}")
+@router.websocket("/api/v1/ws/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, session_id: str):
     await websocket.accept()
     active_sessions[session_id] = websocket
