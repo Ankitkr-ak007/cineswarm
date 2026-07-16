@@ -45,44 +45,40 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
       try {
         const data = JSON.parse(event.data);
         
-        switch (data.type) {
-          case "agent_start":
+        if (data.error) {
+          setError(data.error);
+          return;
+        }
+
+        if (data.status === "done") {
+          ws.close();
+          return;
+        }
+
+        if (data.status === "complete" && data.agent) {
+          if (data.agent === "consensus") {
+            setFinalResult(data.data);
+          } else {
+            // Format the object into a readable string
+            let content = "";
+            if (data.data) {
+              if (data.data.reasoning) content += `${data.data.reasoning}\n\n`;
+              if (data.data.verdict) content += `Verdict: ${data.data.verdict} (Score: ${data.data.score}/10)`;
+              if (data.data.vibe_analysis) content += `${data.data.vibe_analysis}\n\nMatch Score: ${data.data.mood_match_score}/10`;
+              if (data.data.gem_analysis) content += `${data.data.gem_analysis}\n\nIs Hidden Gem: ${data.data.is_hidden_gem ? 'Yes' : 'No'}`;
+              
+              if (!content && typeof data.data === 'string') content = data.data;
+              if (!content) content = JSON.stringify(data.data, null, 2);
+            }
+            if (data.error) {
+              content = `Error: ${data.error}`;
+            }
+
             setMessages(prev => ({
               ...prev,
-              [data.agent]: { agent: data.agent, content: "", isComplete: false }
+              [data.agent]: { agent: data.agent, content, isComplete: true }
             }));
-            break;
-            
-          case "agent_stream":
-            setMessages(prev => {
-              const current = prev[data.agent];
-              if (!current) return prev;
-              return {
-                ...prev,
-                [data.agent]: { ...current, content: current.content + data.chunk }
-              };
-            });
-            break;
-            
-          case "agent_end":
-            setMessages(prev => {
-              const current = prev[data.agent];
-              if (!current) return prev;
-              return {
-                ...prev,
-                [data.agent]: { ...current, isComplete: true }
-              };
-            });
-            break;
-            
-          case "final_result":
-            setFinalResult(data.result);
-            ws.close();
-            break;
-            
-          case "error":
-            setError(data.message);
-            break;
+          }
         }
       } catch (err) {
         console.error("Failed to parse WS message", err);
