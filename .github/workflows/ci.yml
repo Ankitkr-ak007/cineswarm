@@ -20,7 +20,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
+        python-version: '3.12'
         
     - name: Install uv
       run: curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -43,6 +43,7 @@ jobs:
     - name: Run tests
       run: pytest tests/
       env:
+        PYTHONPATH: .
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
@@ -93,3 +94,4 @@ jobs:
       env:
         NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        CI_FAILURE_TEST: ${{ github.ref_name == 'ci-test' && '1' || '0' }}

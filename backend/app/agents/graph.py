@@ -1,20 +1,24 @@
 import uuid
 from typing import TypedDict, Dict, Any, Optional, Annotated
+import structlog
 
-def update_dict(dict1: dict, dict2: dict) -> dict:
-    if dict1 is None: dict1 = {}
-    if dict2 is None: dict2 = {}
-    d = dict1.copy()
-    d.update(dict2)
-    return d
+from langgraph.graph import StateGraph, END, START
 
-from langgraph.graph import StateGraph, END
 from app.agents.critic import run_critic_agent
 from app.agents.vibes import run_vibes_agent
 from app.agents.hidden_gems import run_hidden_gems_agent
 from app.agents.data import run_data_agent
 from app.agents.consensus import run_consensus_agent
-import structlog
+from app.db.supabase import get_supabase_client
+
+def update_dict(dict1: dict, dict2: dict) -> dict:
+    if dict1 is None:
+        dict1 = {}
+    if dict2 is None:
+        dict2 = {}
+    d = dict1.copy()
+    d.update(dict2)
+    return d
 
 logger = structlog.get_logger(__name__)
 
@@ -25,8 +29,6 @@ class AgentState(TypedDict):
     outputs: Annotated[Dict[str, Any], update_dict]
     errors: Annotated[Dict[str, str], update_dict]
     final_result: Optional[Dict[str, Any]]
-
-from app.db.supabase import get_supabase_client
 
 async def _persist_agent_run(session_id: str, movie_id: int, agent_name: str, output: dict, score: float, status: str):
     supabase = get_supabase_client()
@@ -123,8 +125,6 @@ async def consensus_node(state: AgentState):
         await _persist_agent_run(state["session_id"], movie_id, "consensus", {}, 0.0, "failed")
         return {"errors": {"consensus": str(e)}}
 
-from langgraph.graph import START
-
 # Define the graph
 workflow = StateGraph(AgentState)
 
@@ -149,4 +149,3 @@ workflow.add_edge("data", "consensus")
 workflow.add_edge("consensus", END)
 
 graph = workflow.compile()
-

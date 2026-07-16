@@ -27,29 +27,29 @@ def test_kids_mode_safety():
         "genres": [{"name": "Animation"}, {"name": "Comedy"}, {"name": "Family"}],
         "genre_ids": [16, 35, 10751]
     }
-    assert is_safe_for_kids(safe_metadata) == True
+    assert is_safe_for_kids(safe_metadata)
     
     # Unsafe due to adult flag
     adult_metadata = safe_metadata.copy()
     adult_metadata["adult"] = True
-    assert is_safe_for_kids(adult_metadata) == False
+    assert not is_safe_for_kids(adult_metadata)
     
     # Unsafe due to R certification
     r_rated_metadata = safe_metadata.copy()
     r_rated_metadata["certification"] = "R"
-    assert is_safe_for_kids(r_rated_metadata) == False
+    assert not is_safe_for_kids(r_rated_metadata)
     
     # Unsafe due to Horror genre
     horror_metadata = safe_metadata.copy()
     horror_metadata["genres"] = [{"name": "Horror"}]
-    assert is_safe_for_kids(horror_metadata) == False
+    assert not is_safe_for_kids(horror_metadata)
     
     # Unsafe due to keyword blocklist
     keyword_metadata = safe_metadata.copy()
     keyword_metadata["overview"] = "A murder mystery in the woods."
-    assert is_safe_for_kids(keyword_metadata) == False
+    assert not is_safe_for_kids(keyword_metadata)
     
     # Fail-safe check: missing certification
     no_cert_metadata = safe_metadata.copy()
     no_cert_metadata.pop("certification")
-    assert is_safe_for_kids(no_cert_metadata) == False
+    assert not is_safe_for_kids(no_cert_metadata)

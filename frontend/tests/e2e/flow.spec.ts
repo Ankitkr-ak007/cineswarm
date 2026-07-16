@@ -24,6 +24,32 @@ test.describe('CineSwarm Full Flow', () => {
     // Press escape to close modal
     await page.keyboard.press('Escape');
 
+    // Mock the backend API call since the backend isn't running in Frontend CI
+    await page.route('**/api/v1/recommend', async route => {
+      await route.fulfill({ json: { session_id: 'test-session-123' } });
+    });
+
+    // Mock WebSocket in the browser
+    await page.addInitScript(() => {
+      class MockWebSocket {
+        url: string;
+        readyState: number = 1; // OPEN
+        onmessage: any;
+        onerror: any;
+        constructor(url: string) {
+          this.url = url;
+          setTimeout(() => {
+            if (this.onmessage) {
+              this.onmessage({ data: JSON.stringify({ type: 'final_result', result: { actual_rating: 8, consensus_score: 9, recommendations: ['Test Movie'], explanation: 'Test explanation' } }) });
+            }
+          }, 500);
+        }
+        close() {}
+        send() {}
+      }
+      (window as any).WebSocket = MockWebSocket;
+    });
+
     // Submit form
     await page.click('button:has-text("Find Me a Movie")');
     
@@ -36,5 +62,10 @@ test.describe('CineSwarm Full Flow', () => {
     // Should see Dual Rating Display
     await expect(page.getByText('TMDB Rating')).toBeVisible();
     await expect(page.getByText('Swarm Consensus')).toBeVisible();
+
+    // INTENTIONAL FAILURE FOR CI TESTING
+    if (process.env.CI_FAILURE_TEST === '1') {
+      await expect(page.getByText('This text does not exist')).toBeVisible({ timeout: 100 });
+    }
   });
 });
