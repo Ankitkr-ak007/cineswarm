@@ -22,7 +22,8 @@ async def verify_kids_pin(request: VerifyPinRequest):
         if not data:
             raise HTTPException(status_code=404, detail="User not found")
             
-        stored_hash = data[0].get("kids_pin_hash")
+        user_data = data[0]
+        stored_hash = user_data.get("kids_pin_hash") if isinstance(user_data, dict) else None
         if not stored_hash:
             raise HTTPException(status_code=400, detail="User has no PIN set")
             
@@ -38,6 +39,6 @@ async def verify_kids_pin(request: VerifyPinRequest):
             
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         log.exception("Error verifying PIN")
         raise HTTPException(status_code=500, detail="Internal server error")

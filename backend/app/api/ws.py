@@ -1,5 +1,3 @@
-import json
-import asyncio
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import Dict
 import structlog
@@ -28,10 +26,13 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
         await websocket.close()
         return
 
+    from typing import cast
+    from app.agents.graph import AgentState
+    state_typed = cast(AgentState, state)
     try:
         # We use astream to stream updates as nodes complete
         # graph.astream yields (node_name, state_update)
-        async for output in graph.astream(state):
+        async for output in graph.astream(state_typed):
             # Output is a dict like {'critic': {'outputs': {'critic': ...}}}
             for node_name, node_state in output.items():
                 if node_name == "consensus":

@@ -1,6 +1,6 @@
 import json
 import httpx
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from app.core.config import settings
 from app.db.supabase import get_supabase_client
@@ -91,12 +91,12 @@ async def run_hidden_gems_agent(movie_metadata: dict, session_id: str) -> Hidden
             }).execute()
             
             matches = match_res.data
-            if matches:
+            if isinstance(matches, list):
                 # Filter out the movie itself
-                matches = [m for m in matches if m["tmdb_id"] != tmdb_id]
+                matches = [m for m in matches if isinstance(m, dict) and m.get("tmdb_id") != tmdb_id]
                 if matches:
-                    similar_titles = [m["title"] for m in matches]
-                    similar_movies_str = ", ".join(similar_titles)
+                    similar_titles = [m.get("title") for m in matches if isinstance(m, dict) and "title" in m]
+                    similar_movies_str = ", ".join(str(t) for t in similar_titles)
         except Exception as e:
             log.warning("Database operation failed in hidden gems (schema might be missing)", error=str(e))
             # Graceful degradation if DB is not setup

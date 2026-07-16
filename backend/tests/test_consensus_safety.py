@@ -1,4 +1,3 @@
-import pytest
 from app.agents.consensus import calculate_consensus_score
 from app.core.safety import is_safe_for_kids
 

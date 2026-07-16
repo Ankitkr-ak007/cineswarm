@@ -1,16 +1,12 @@
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.models import EvaluateRequest, EvaluateResponse, RecommendRequest, RecommendResponse
-from app.core.tmdb import fetch_movie_metadata, MovieNotFoundError, TMDBError
-from app.agents.critic import run_critic_agent, GroqError
+from app.api.models import RecommendRequest, RecommendResponse
+from app.core.tmdb import fetch_movie_metadata
 from app.api.ws import router as ws_router, session_states
 from app.api.auth import router as auth_router
 from app.core.safety import is_safe_for_kids
 from app.db.supabase import get_supabase_client
-import logging
 import uuid
-import time
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -30,7 +26,7 @@ app.add_middleware(
 )
 
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore
 
 app.include_router(ws_router)
 app.include_router(auth_router)
@@ -59,13 +55,22 @@ async def recommend_movie(request: Request, body: RecommendRequest):
     # and pass it to the agents, since the prompt didn't specify how to select the candidate!
     # Ah, the prompt: "where four AI agents debate a candidate movie in real time"
     # I'll just pick "Inception" or a random popular movie to serve as the candidate for the debate.
+    candidate_titles = ["Inception", "The Matrix", "The Dark Knight", "Finding Nemo", "Toy Story", "Shrek", "Spider-Man"]
+    
     try:
-        movie_metadata = await fetch_movie_metadata("Inception") # Hardcoded for now as placeholder candidate
-        
-        # Apply Kids Mode safety check
-        if body.content_mode == "kids":
-            if not is_safe_for_kids(movie_metadata):
-                raise HTTPException(status_code=400, detail="Candidate movie is not safe for Kids Mode")
+        movie_metadata = None
+        for title in candidate_titles:
+            try:
+                meta = await fetch_movie_metadata(title)
+                if body.content_mode == "kids" and not is_safe_for_kids(meta):
+                    continue
+                movie_metadata = meta
+                break
+            except Exception:
+                continue
+                
+        if not movie_metadata:
+            raise HTTPException(status_code=404, detail="No suitable candidate movie found")
                 
         # Persist session to DB
         supabase = get_supabase_client()
@@ -90,6 +95,8 @@ async def recommend_movie(request: Request, body: RecommendRequest):
         
         return RecommendResponse(session_id=session_id)
         
+    except HTTPException:
+        raise
     except Exception as e:
         log.exception("Error preparing recommendation")
         raise HTTPException(status_code=500, detail=str(e))

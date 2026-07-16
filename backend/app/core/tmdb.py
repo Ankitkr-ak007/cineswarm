@@ -21,7 +21,7 @@ async def fetch_movie_metadata(title: str) -> dict:
         raise ValueError("TMDB_API_KEY is not set")
     
     url = "https://api.themoviedb.org/3/search/movie"
-    params = {
+    params: dict[str, str | int] = {
         "api_key": settings.TMDB_API_KEY,
         "query": title,
         "include_adult": "false",
