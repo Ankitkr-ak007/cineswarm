@@ -11,10 +11,10 @@ async def get_gemini_embedding(text: str) -> list[float]:
     if not text:
         return [0.0] * 768
     
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key={settings.GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key={settings.GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
     payload = {
-        "model": "models/text-embedding-004",
+        "model": "models/embedding-001",
         "content": {"parts": [{"text": text}]},
         "outputDimensionality": 768
     }
@@ -109,7 +109,7 @@ Output strictly as JSON: {"score": <1-10>, "reasoning": "<2-3 sentences>", "simi
 
     user_prompt = f"Evaluate the movie: '{title}'. Overview: {overview}\nSimilar movies found in our database: {similar_movies_str}"
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
     payload = {
         "contents": [
