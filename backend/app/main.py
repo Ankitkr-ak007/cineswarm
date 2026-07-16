@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.models import RecommendRequest, RecommendResponse
+from app.api.models import RecommendRequest, RecommendResponse, FeedbackRequest, FeedbackResponse
 from app.core.tmdb import fetch_movie_metadata
 from app.api.ws import router as ws_router, session_states
 from app.api.auth import router as auth_router
@@ -100,4 +100,26 @@ async def recommend_movie(request: Request, body: RecommendRequest):
     except Exception as e:
         log.exception("Error preparing recommendation")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/v1/feedback", response_model=FeedbackResponse)
+@limiter.limit("10/minute")
+async def submit_feedback(request: Request, body: FeedbackRequest):
+    log = logger.bind(session_id=body.session_id)
+    log.info("Received feedback", type=body.feedback_type)
+    
+    supabase = get_supabase_client()
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Database not configured")
+        
+    try:
+        supabase.table("feedback").insert({
+            "id": str(uuid.uuid4()),
+            "session_id": body.session_id,
+            "feedback_type": body.feedback_type,
+            "comment": body.comment
+        }).execute()
+        return FeedbackResponse(success=True)
+    except Exception as e:
+        log.exception("Error submitting feedback")
+        raise HTTPException(status_code=500, detail="Failed to save feedback")
 

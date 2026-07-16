@@ -23,3 +23,11 @@ class VerifyPinRequest(BaseModel):
 class VerifyPinResponse(BaseModel):
     success: bool
     message: str
+
+class FeedbackRequest(BaseModel):
+    session_id: str = Field(..., description="The session ID.")
+    feedback_type: str = Field(..., description="'thumbs_up' or 'thumbs_down'")
+    comment: str | None = Field(default=None, description="Optional text feedback.")
+
+class FeedbackResponse(BaseModel):
+    success: bool

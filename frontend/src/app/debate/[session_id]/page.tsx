@@ -7,6 +7,7 @@ import { DualRatingDisplay } from "@/components/DualRatingDisplay";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { apiClient } from "@/lib/api-client";
 
 interface AgentMessage {
   agent: string;
@@ -154,6 +155,37 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
                     {finalResult.recommendations?.join(", ")}
                   </div>
                   <p className="text-green-700 italic">&quot;{finalResult.explanation}&quot;</p>
+                  
+                  {/* Feedback Section */}
+                  <div className="mt-6 pt-6 border-t border-green-200">
+                    <h4 className="text-sm font-semibold text-green-800 mb-4">How was this recommendation?</h4>
+                    <div className="flex gap-4 justify-center">
+                      <button 
+                        onClick={async () => {
+                          const { error } = await apiClient.POST("/api/v1/feedback", {
+                            body: { session_id: sessionId, feedback_type: "thumbs_up" }
+                          });
+                          if (!error) alert("Thanks for your feedback!");
+                          else alert("Failed to submit feedback.");
+                        }}
+                        className="px-4 py-2 bg-green-100 hover:bg-green-200 text-green-800 rounded-md font-medium transition-colors"
+                      >
+                        👍 Good
+                      </button>
+                      <button 
+                        onClick={async () => {
+                          const { error } = await apiClient.POST("/api/v1/feedback", {
+                            body: { session_id: sessionId, feedback_type: "thumbs_down" }
+                          });
+                          if (!error) alert("Thanks for your feedback!");
+                          else alert("Failed to submit feedback.");
+                        }}
+                        className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-800 rounded-md font-medium transition-colors"
+                      >
+                        👎 Bad
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

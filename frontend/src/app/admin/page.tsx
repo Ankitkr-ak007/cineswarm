@@ -26,8 +26,30 @@ export default async function AdminDashboard() {
 
   // Calculate simple stats
   const totalRuns = agentRuns?.length || 0;
-  const errorRuns = agentRuns?.filter(r => r.error).length || 0;
+  const errorRuns = agentRuns?.filter(r => r.status === 'failed').length || 0;
   const failureRate = totalRuns > 0 ? (errorRuns / totalRuns * 100).toFixed(1) : 0;
+
+  // Calculate live quotas for today
+  // Get start of today in UTC
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  const groqAgents = ["critic", "vibes"];
+  const geminiAgents = ["hidden_gems", "consensus"];
+
+  const runsToday = agentRuns?.filter(r => new Date(r.created_at) >= today) || [];
+  
+  const groqRunsToday = runsToday.filter(r => groqAgents.includes(r.agent_name)).length;
+  const geminiRunsToday = runsToday.filter(r => geminiAgents.includes(r.agent_name)).length;
+
+  const GROQ_LIMIT = 14400; // Free tier daily limit (typical)
+  const GEMINI_LIMIT = 1500; // Free tier daily limit
+
+  const groqPercent = Math.min(100, Math.round((groqRunsToday / GROQ_LIMIT) * 100));
+  const geminiPercent = Math.min(100, Math.round((geminiRunsToday / GEMINI_LIMIT) * 100));
+
+  const groqWarning = groqPercent >= 80;
+  const geminiWarning = geminiPercent >= 80;
 
   return (
     <div className="space-y-8">
@@ -35,6 +57,13 @@ export default async function AdminDashboard() {
         <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
         <p className="text-slate-400 mt-2">Overview of Swarm performance and usage.</p>
       </div>
+
+      {(groqWarning || geminiWarning) && (
+        <div className="bg-red-950/50 border border-red-500/50 text-red-200 p-4 rounded-md">
+          <strong className="font-bold">Quota Warning:</strong> One or more AI provider quotas are nearing their daily limit. 
+          Consider upgrading your tier or adding rate limiting.
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="bg-slate-950 border-slate-800">
@@ -51,30 +80,32 @@ export default async function AdminDashboard() {
             <CardTitle className="text-sm font-medium text-slate-400">Failure Rate</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-400">{failureRate}%</div>
+            <div className={`text-2xl font-bold ${errorRuns > 0 ? 'text-red-400' : 'text-green-400'}`}>{failureRate}%</div>
           </CardContent>
         </Card>
         
-        <Card className="bg-slate-950 border-slate-800">
+        <Card className={`bg-slate-950 border-slate-800 ${groqWarning ? 'border-red-500/50' : ''}`}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-400">Groq Quota</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-400">42%</div>
-            <div className="w-full bg-slate-800 rounded-full h-2 mt-3">
-              <div className="bg-amber-400 h-2 rounded-full" style={{ width: "42%" }}></div>
+            <div className={`text-2xl font-bold ${groqWarning ? 'text-red-400 animate-pulse' : 'text-amber-400'}`}>{groqPercent}%</div>
+            <div className="text-xs text-slate-500 mt-1">{groqRunsToday} / {GROQ_LIMIT}</div>
+            <div className="w-full bg-slate-800 rounded-full h-2 mt-2">
+              <div className={`${groqWarning ? 'bg-red-500' : 'bg-amber-400'} h-2 rounded-full`} style={{ width: `${groqPercent}%` }}></div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-slate-950 border-slate-800">
+        <Card className={`bg-slate-950 border-slate-800 ${geminiWarning ? 'border-red-500/50' : ''}`}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-400">Gemini Quota</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-400">18%</div>
-            <div className="w-full bg-slate-800 rounded-full h-2 mt-3">
-              <div className="bg-blue-400 h-2 rounded-full" style={{ width: "18%" }}></div>
+            <div className={`text-2xl font-bold ${geminiWarning ? 'text-red-400 animate-pulse' : 'text-blue-400'}`}>{geminiPercent}%</div>
+            <div className="text-xs text-slate-500 mt-1">{geminiRunsToday} / {GEMINI_LIMIT}</div>
+            <div className="w-full bg-slate-800 rounded-full h-2 mt-2">
+              <div className={`${geminiWarning ? 'bg-red-500' : 'bg-blue-400'} h-2 rounded-full`} style={{ width: `${geminiPercent}%` }}></div>
             </div>
           </CardContent>
         </Card>
