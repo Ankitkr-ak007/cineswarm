@@ -36,5 +36,8 @@ test.describe('CineSwarm Full Flow', () => {
     // Should see Dual Rating Display
     await expect(page.getByText('TMDB Rating')).toBeVisible();
     await expect(page.getByText('Swarm Consensus')).toBeVisible();
+
+    // INTENTIONAL FAILURE FOR CI TESTING
+    await expect(page.getByText('This text does not exist')).toBeVisible({ timeout: 100 });
   });
 });
