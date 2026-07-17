@@ -86,6 +86,30 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
     }
   };
 
+  const handleRecommendSimilar = async (title: string) => {
+    setRecommendingSimilar(true);
+    setError(null);
+    setFinalResult(null);
+    setMessages({});
+    setMovieMetadata(null);
+    
+    try {
+      const { data, error: apiErr } = await apiClient.POST("/api/v1/recommend", {
+        body: { mood: `Recommend similar movie: ${title}`, genres: [] }
+      });
+      if (apiErr) {
+        alert("Failed to submit request");
+        setRecommendingSimilar(false);
+      } else if (data?.session_id) {
+        router.push(`/debate/${data.session_id}`);
+        setRecommendingSimilar(false);
+      }
+    } catch (err) {
+      console.error(err);
+      setRecommendingSimilar(false);
+    }
+  };
+
   useEffect(() => {
     // Scroll to bottom when messages update
     if (scrollRef.current) {
@@ -293,7 +317,7 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
           <Card className="border border-slate-200 dark:border-slate-800/80 bg-white/95 dark:bg-slate-900/80 backdrop-blur-md shadow-2xl overflow-hidden rounded-3xl">
             <CardContent className="p-0">
               <ScrollArea className="h-[450px] p-6" ref={scrollRef}>
-                <div className="space-y-6">
+                <div className="space-y-6" aria-live="polite" aria-relevant="additions text">
                   {agentList.length === 0 && (
                     <div className="h-[350px] flex flex-col items-center justify-center text-center space-y-4">
                       <div className="flex space-x-2">
@@ -484,30 +508,17 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
                 {movieMetadata.similar_movies.map((movie, idx) => (
                   <div 
                     key={idx}
-                    onClick={async () => {
-                      setRecommendingSimilar(true);
-                      setError(null);
-                      setFinalResult(null);
-                      setMessages({});
-                      setMovieMetadata(null);
-                      
-                      try {
-                        const { data, error: apiErr } = await apiClient.POST("/api/v1/recommend", {
-                          body: { mood: `Recommend similar movie: ${movie.title}`, genres: [] }
-                        });
-                        if (apiErr) {
-                          alert("Failed to submit request");
-                          setRecommendingSimilar(false);
-                        } else if (data?.session_id) {
-                          router.push(`/debate/${data.session_id}`);
-                          setRecommendingSimilar(false);
-                        }
-                      } catch (err) {
-                        console.error(err);
-                        setRecommendingSimilar(false);
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleRecommendSimilar(movie.title || "")}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        handleRecommendSimilar(movie.title || "");
                       }
                     }}
-                    className="group cursor-pointer space-y-2 border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/40 p-2.5 rounded-2xl hover:border-slate-350 dark:hover:border-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-800/40 transition-all duration-300 transform hover:-translate-y-1"
+                    aria-label={`View similar movie: ${movie.title}`}
+                    className="group cursor-pointer space-y-2 border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/40 p-2.5 rounded-2xl hover:border-slate-350 dark:hover:border-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-800/40 transition-all duration-300 transform hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
                   >
                     <div className="aspect-[2/3] w-full rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 relative shadow-md">
                       {movie.poster_path ? (

@@ -249,8 +249,17 @@ export default function RequestForm() {
               {favorites.map((fav) => (
                 <div 
                   key={fav.tmdb_id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleFavoriteClick(fav.title)}
-                  className="group cursor-pointer bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 p-2.5 rounded-2xl hover:border-slate-350 dark:hover:border-slate-700/50 hover:bg-slate-100/50 dark:hover:bg-slate-800/40 transition-all duration-300 transform hover:-translate-y-1 shadow-sm"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleFavoriteClick(fav.title);
+                    }
+                  }}
+                  aria-label={`Start debate for saved movie: ${fav.title}`}
+                  className="group cursor-pointer bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 p-2.5 rounded-2xl hover:border-slate-350 dark:hover:border-slate-700/50 hover:bg-slate-100/50 dark:hover:bg-slate-800/40 transition-all duration-300 transform hover:-translate-y-1 shadow-sm focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
                 >
                   <div className="aspect-[2/3] w-full rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 relative shadow-md">
                     {fav.poster_path ? (
