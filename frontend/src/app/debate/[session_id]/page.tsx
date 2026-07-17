@@ -22,12 +22,25 @@ interface FinalResult {
   explanation?: string;
 }
 
+interface MovieMetadata {
+  id?: number;
+  title?: string;
+  overview?: string;
+  poster_path?: string | null;
+  backdrop_path?: string | null;
+  release_date?: string;
+  cast?: string[];
+  trailer_key?: string | null;
+  watch_providers?: { name: string; logo_path: string | null }[];
+  similar_movies?: { id: number; title: string; poster_path: string | null }[];
+}
+
 function DebateViewInner({ sessionId }: { sessionId: string }) {
   const router = useRouter();
   const [messages, setMessages] = useState<Record<string, AgentMessage>>({});
   const [finalResult, setFinalResult] = useState<FinalResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [movieMetadata, setMovieMetadata] = useState<any>(null);
+  const [movieMetadata, setMovieMetadata] = useState<MovieMetadata | null>(null);
   const [trailerExpanded, setTrailerExpanded] = useState(false);
   const [recommendingSimilar, setRecommendingSimilar] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
@@ -155,6 +168,7 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
             {/* Poster wrapper */}
             <div className="w-full md:w-48 shrink-0 rounded-2xl overflow-hidden shadow-2xl border border-slate-700/50 bg-slate-800 aspect-[2/3] relative">
               {movieMetadata.poster_path ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img 
                   src={`https://image.tmdb.org/t/p/w500${movieMetadata.poster_path}`} 
                   alt={movieMetadata.title}
@@ -367,9 +381,10 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
                   </h3>
                   {movieMetadata.watch_providers.length > 0 ? (
                     <div className="flex flex-wrap gap-3">
-                      {movieMetadata.watch_providers.map((provider: any, idx: number) => (
+                      {movieMetadata.watch_providers.map((provider, idx) => (
                         <div key={idx} className="flex items-center gap-2.5 bg-slate-800/50 border border-slate-750 p-1.5 pr-3.5 rounded-xl shadow-sm hover:border-slate-600 transition-colors">
                           {provider.logo_path ? (
+                            /* eslint-disable-next-line @next/next/no-img-element */
                             <img 
                               src={`https://image.tmdb.org/t/p/original${provider.logo_path}`} 
                               alt={provider.name}
@@ -408,7 +423,7 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-                {movieMetadata.similar_movies.map((movie: any, idx: number) => (
+                {movieMetadata.similar_movies.map((movie, idx) => (
                   <div 
                     key={idx}
                     onClick={async () => {
@@ -438,6 +453,7 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
                   >
                     <div className="aspect-[2/3] w-full rounded-xl overflow-hidden bg-slate-800 relative shadow-md">
                       {movie.poster_path ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img 
                           src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`} 
                           alt={movie.title}

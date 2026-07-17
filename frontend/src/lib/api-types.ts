@@ -4,23 +4,6 @@
  */
 
 export interface paths {
-    "/api/v1/kids-mode/verify-pin": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Verify Kids Pin */
-        post: operations["verify_kids_pin_api_v1_kids_mode_verify_pin_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/": {
         parameters: {
             query?: never;
@@ -133,12 +116,6 @@ export interface components {
              * @description Preferred genres.
              */
             genres?: string[];
-            /**
-             * Content Mode
-             * @description The mode of content recommendation.
-             * @default general
-             */
-            content_mode: string;
         };
         /** RecommendResponse */
         RecommendResponse: {
@@ -161,26 +138,6 @@ export interface components {
             /** Context */
             ctx?: Record<string, never>;
         };
-        /** VerifyPinRequest */
-        VerifyPinRequest: {
-            /**
-             * User Id
-             * @description The user's UUID.
-             */
-            user_id: string;
-            /**
-             * Pin
-             * @description The plaintext PIN to verify.
-             */
-            pin: string;
-        };
-        /** VerifyPinResponse */
-        VerifyPinResponse: {
-            /** Success */
-            success: boolean;
-            /** Message */
-            message: string;
-        };
     };
     responses: never;
     parameters: never;
@@ -190,39 +147,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    verify_kids_pin_api_v1_kids_mode_verify_pin_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VerifyPinRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["VerifyPinResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     read_root__get: {
         parameters: {
             query?: never;
