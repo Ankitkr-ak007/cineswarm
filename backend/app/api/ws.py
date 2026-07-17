@@ -2,6 +2,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import Dict
 import structlog
 from app.agents.graph import graph
+from app.db.supabase import get_supabase_client
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
@@ -19,6 +20,50 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
     log = logger.bind(session_id=session_id)
     log.info("WebSocket connected")
     
+    # 1. Try to load historical completed agent runs from the database
+    db_runs = []
+    try:
+        supabase = get_supabase_client()
+        if supabase:
+            res = supabase.table("agent_runs").select("*").eq("session_id", session_id).execute()
+            db_runs = res.data or []
+    except Exception as e:
+        log.warning("Could not fetch agent runs from Supabase", error=str(e))
+
+    if db_runs:
+        log.info("Found existing agent runs in database, sending historical data")
+        try:
+            for run in db_runs:
+                agent_name = run.get("agent_name")
+                output = run.get("output")
+                status = run.get("status")
+                
+                if agent_name == "consensus":
+                    await websocket.send_json({
+                        "agent": agent_name,
+                        "status": "complete",
+                        "data": output
+                    })
+                elif agent_name in ["critic", "vibes", "hidden_gems", "data"]:
+                    await websocket.send_json({
+                        "agent": agent_name,
+                        "status": "complete",
+                        "data": output,
+                        "error": None if status == "ok" else "Agent failed"
+                    })
+            await websocket.send_json({"status": "done"})
+        except WebSocketDisconnect:
+            log.info("WebSocket disconnected while sending historical data")
+        except Exception as e:
+            log.error("Error sending historical data", error=str(e))
+        finally:
+            active_sessions.pop(session_id, None)
+            try:
+                await websocket.close()
+            except Exception:
+                pass
+            return
+
     # Retrieve the state to kick off the graph
     state = session_states.get(session_id)
     if not state:
@@ -29,6 +74,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
     from typing import cast
     from app.agents.graph import AgentState
     state_typed = cast(AgentState, state)
+    completed = False
     try:
         # We use astream to stream updates as nodes complete
         # graph.astream yields (node_name, state_update)
@@ -50,6 +96,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                     })
         
         await websocket.send_json({"status": "done"})
+        completed = True
     except WebSocketDisconnect:
         log.info("WebSocket disconnected by client")
     except Exception as e:
@@ -60,7 +107,8 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
             pass
     finally:
         active_sessions.pop(session_id, None)
-        session_states.pop(session_id, None)
+        if completed:
+            session_states.pop(session_id, None)
         try:
             await websocket.close()
         except Exception:
