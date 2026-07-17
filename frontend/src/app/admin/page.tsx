@@ -27,7 +27,7 @@ export default async function AdminDashboard() {
   // Calculate simple stats
   const totalRuns = agentRuns?.length || 0;
   const errorRuns = agentRuns?.filter(r => r.status === 'failed').length || 0;
-  const failureRate = totalRuns > 0 ? (errorRuns / totalRuns * 100).toFixed(1) : 0;
+  const failureRate = totalRuns > 0 ? ((errorRuns / totalRuns) * 100).toFixed(1) : "0.0";
 
   // Calculate live quotas for today
   // Get start of today in UTC
@@ -51,10 +51,31 @@ export default async function AdminDashboard() {
   const groqWarning = groqPercent >= 80;
   const geminiWarning = geminiPercent >= 80;
 
+  // Task 3: Latency calculations per agent
+  const agentLatencies = geminiAgents.concat(groqAgents).map(name => {
+    const runs = agentRuns?.filter(r => r.agent_name === name && r.latency_ms) || [];
+    const avg = runs.length > 0 ? Math.round(runs.reduce((acc, r) => acc + (r.latency_ms || 0), 0) / runs.length) : 0;
+    return { name, avg, count: runs.length };
+  });
+
+  // Task 3: Service operational status based on most recent session
+  const mostRecentSessionId = agentRuns && agentRuns.length > 0 ? agentRuns[0].session_id : null;
+  const recentSessionRuns = (mostRecentSessionId && agentRuns) 
+    ? agentRuns.filter(r => r.session_id === mostRecentSessionId)
+    : [];
+
+  const groqRuns = recentSessionRuns.filter(r => groqAgents.includes(r.agent_name));
+  const groqSuccess = groqRuns.length > 0 && groqRuns.every(r => r.status === "ok");
+
+  const geminiRuns = recentSessionRuns.filter(r => geminiAgents.includes(r.agent_name));
+  const geminiSuccess = geminiRuns.length > 0 && geminiRuns.every(r => r.status === "ok");
+
+  const tmdbSuccess = recentSessionRuns.length > 0 && recentSessionRuns.every(r => r.movie_id !== null);
+
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+        <h2 className="text-3xl font-bold tracking-tight text-white">Dashboard</h2>
         <p className="text-slate-400 mt-2">Overview of Swarm performance and usage.</p>
       </div>
 
@@ -65,13 +86,14 @@ export default async function AdminDashboard() {
         </div>
       )}
 
+      {/* Quota grids */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="bg-slate-950 border-slate-800">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-400">Total Requests (Today)</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalRuns}</div>
+            <div className="text-2xl font-bold text-white">{totalRuns}</div>
           </CardContent>
         </Card>
         
@@ -111,13 +133,94 @@ export default async function AdminDashboard() {
         </Card>
       </div>
 
+      {/* Task 3 Charts and Status Grid */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Latency Table */}
+        <Card className="bg-slate-950 border-slate-800">
+          <CardHeader>
+            <CardTitle className="text-lg font-bold text-white">Per-Agent Average Latency</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <table className="w-full text-sm text-left text-slate-300">
+              <thead className="text-xs uppercase bg-slate-900 border-b border-slate-800 text-slate-400">
+                <tr>
+                  <th className="px-4 py-2">Agent</th>
+                  <th className="px-4 py-2">Runs Count</th>
+                  <th className="px-4 py-2">Avg Latency</th>
+                </tr>
+              </thead>
+              <tbody>
+                {agentLatencies.map((agent) => (
+                  <tr key={agent.name} className="border-b border-slate-900 hover:bg-slate-900/50">
+                    <td className="px-4 py-3 capitalize font-semibold">{agent.name.replace("_", " ")}</td>
+                    <td className="px-4 py-3">{agent.count}</td>
+                    <td className="px-4 py-3 text-blue-400 font-bold">{agent.avg > 0 ? `${agent.avg} ms` : "N/A"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+
+        {/* Operational Status Table */}
+        <Card className="bg-slate-950 border-slate-800">
+          <CardHeader>
+            <CardTitle className="text-lg font-bold text-white">Most Recent Request Service Status</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {mostRecentSessionId ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-semibold text-slate-400">Session ID:</span>
+                  <span className="font-mono text-xs text-slate-500">{mostRecentSessionId}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 text-center space-y-1">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">TMDB</span>
+                    <div className="text-xs font-bold mt-1">
+                      {tmdbSuccess ? (
+                        <span className="text-green-400">✅ ONLINE</span>
+                      ) : (
+                        <span className="text-red-400">❌ OFFLINE</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 text-center space-y-1">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">Groq</span>
+                    <div className="text-xs font-bold mt-1">
+                      {groqSuccess ? (
+                        <span className="text-green-400">✅ SUCCESS</span>
+                      ) : (
+                        <span className="text-red-400">❌ FAILED</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 text-center space-y-1">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">Gemini</span>
+                    <div className="text-xs font-bold mt-1">
+                      {geminiSuccess ? (
+                        <span className="text-green-400">✅ SUCCESS</span>
+                      ) : (
+                        <span className="text-red-400">❌ FAILED</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500 text-center py-4">No recent session data available.</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       <Card className="bg-slate-950 border-slate-800">
         <CardHeader>
-          <CardTitle>Recent Agent Logs</CardTitle>
+          <CardTitle className="text-white">Recent Agent Logs</CardTitle>
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[400px]">
-            <table className="w-full text-sm text-left">
+            <table className="w-full text-sm text-left text-slate-300">
               <thead className="text-xs text-slate-400 uppercase bg-slate-900 border-b border-slate-800 sticky top-0">
                 <tr>
                   <th className="px-6 py-3">Timestamp</th>

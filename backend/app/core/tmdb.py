@@ -1,6 +1,10 @@
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from app.core.config import settings
+from app.db.supabase import get_supabase_client
+import structlog
+
+logger = structlog.get_logger(__name__)
 
 class TMDBError(Exception):
     """Raised when TMDB API call fails."""
@@ -17,6 +21,34 @@ class MovieNotFoundError(Exception):
 )
 async def fetch_movie_metadata(title: str) -> dict:
     """Fetch movie metadata from TMDB by title. Takes the top match."""
+    # Check cache first
+    supabase = get_supabase_client()
+    if supabase:
+        try:
+            res = supabase.table("movies").select("*").ilike("title", title).execute()
+            if res.data:
+                movie = res.data[0]
+                genres_data = movie.get("genres") or {}
+                if isinstance(genres_data, dict) and "credits" in genres_data:
+                    metadata = {
+                        "id": movie.get("tmdb_id"),
+                        "title": movie.get("title"),
+                        "overview": movie.get("overview"),
+                        "release_date": str(movie.get("release_date")) if movie.get("release_date") else None,
+                        "poster_path": movie.get("poster_path"),
+                        "backdrop_path": genres_data.get("backdrop_path"),
+                        "credits": genres_data.get("credits"),
+                        "videos": genres_data.get("videos"),
+                        "watch/providers": genres_data.get("watch/providers"),
+                        "similar": genres_data.get("similar"),
+                        "release_dates": genres_data.get("release_dates"),
+                        "certification": movie.get("certification")
+                    }
+                    logger.info("Found cached movie in database by title", title=title, id=metadata["id"])
+                    return metadata
+        except Exception as e:
+            logger.warning("Failed to check movies cache by title", error=str(e))
+
     if not settings.TMDB_API_KEY:
         raise ValueError("TMDB_API_KEY is not set")
     
@@ -82,10 +114,64 @@ async def fetch_movie_metadata(title: str) -> dict:
                     break
                     
         details_data["certification"] = certification
+
+        # Store in database cache
+        if supabase:
+            try:
+                genres_cache = {
+                    "genres": details_data.get("genres"),
+                    "credits": details_data.get("credits"),
+                    "videos": details_data.get("videos"),
+                    "watch/providers": details_data.get("watch/providers"),
+                    "similar": details_data.get("similar"),
+                    "release_dates": details_data.get("release_dates"),
+                    "backdrop_path": details_data.get("backdrop_path")
+                }
+                supabase.table("movies").upsert({
+                    "tmdb_id": details_data.get("id"),
+                    "title": details_data.get("title"),
+                    "overview": details_data.get("overview"),
+                    "genres": genres_cache,
+                    "release_date": details_data.get("release_date"),
+                    "certification": details_data.get("certification"),
+                    "adult": details_data.get("adult"),
+                    "poster_path": details_data.get("poster_path")
+                }).execute()
+            except Exception as cache_err:
+                logger.warning("Failed to save movie to database cache", error=str(cache_err))
+
         return details_data
 
 async def fetch_movie_details_by_id(movie_id: int) -> dict:
     """Fetch full movie details from TMDB by movie ID (with appends)."""
+    # Check cache first
+    supabase = get_supabase_client()
+    if supabase:
+        try:
+            res = supabase.table("movies").select("*").eq("tmdb_id", movie_id).execute()
+            if res.data:
+                movie = res.data[0]
+                genres_data = movie.get("genres") or {}
+                if isinstance(genres_data, dict) and "credits" in genres_data:
+                    metadata = {
+                        "id": movie.get("tmdb_id"),
+                        "title": movie.get("title"),
+                        "overview": movie.get("overview"),
+                        "release_date": str(movie.get("release_date")) if movie.get("release_date") else None,
+                        "poster_path": movie.get("poster_path"),
+                        "backdrop_path": genres_data.get("backdrop_path"),
+                        "credits": genres_data.get("credits"),
+                        "videos": genres_data.get("videos"),
+                        "watch/providers": genres_data.get("watch/providers"),
+                        "similar": genres_data.get("similar"),
+                        "release_dates": genres_data.get("release_dates"),
+                        "certification": movie.get("certification")
+                    }
+                    logger.info("Found cached movie in database by ID", id=movie_id)
+                    return metadata
+        except Exception as e:
+            logger.warning("Failed to check movies cache by ID", error=str(e))
+
     if not settings.TMDB_API_KEY:
         raise ValueError("TMDB_API_KEY is not set")
         
@@ -114,6 +200,32 @@ async def fetch_movie_details_by_id(movie_id: int) -> dict:
                 if certification:
                     break
         details_data["certification"] = certification
+
+        # Store in database cache
+        if supabase:
+            try:
+                genres_cache = {
+                    "genres": details_data.get("genres"),
+                    "credits": details_data.get("credits"),
+                    "videos": details_data.get("videos"),
+                    "watch/providers": details_data.get("watch/providers"),
+                    "similar": details_data.get("similar"),
+                    "release_dates": details_data.get("release_dates"),
+                    "backdrop_path": details_data.get("backdrop_path")
+                }
+                supabase.table("movies").upsert({
+                    "tmdb_id": details_data.get("id"),
+                    "title": details_data.get("title"),
+                    "overview": details_data.get("overview"),
+                    "genres": genres_cache,
+                    "release_date": details_data.get("release_date"),
+                    "certification": details_data.get("certification"),
+                    "adult": details_data.get("adult"),
+                    "poster_path": details_data.get("poster_path")
+                }).execute()
+            except Exception as cache_err:
+                logger.warning("Failed to save movie to database cache", error=str(cache_err))
+
         return details_data
 
 def extract_cast(movie_metadata: dict) -> list[str]:
