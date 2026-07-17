@@ -11,6 +11,7 @@ class ConsensusOutput(BaseModel):
     consensus_score: float
     explanation: str
     confidence: str
+    recommendations: list[str] = []
 
 class GeminiError(Exception):
     pass
@@ -77,11 +78,11 @@ async def run_consensus_agent(movie_metadata: dict, agent_outputs: dict, session
     if actual_agents < expected_agents:
         confidence = "low"
         
-    system_prompt = """You are the Consensus Agent. You synthesize the opinions of a Critic, a Vibes analyst, a Hidden Gems analyst, and raw Data.
-You are given their individual findings and the final mathematically computed consensus score.
-Your job is ONLY to generate a natural-language explanation synthesizing their views.
-Do not recalculate the score.
-Output strictly as JSON: {"explanation": "<2-3 paragraphs synthesizing the debate>"}"""
+    system_prompt = """You are Lex, the charismatic moderator and host of the CineSwarm debate.
+Synthesize the arguments presented by Roger (the Critic), Aura (the Vibes Analyst), and Pixel (the Hidden Gems scout).
+Summarize their conversation and final opinions in a lively, host-like, natural tone (e.g. "Welcome back! Roger and Aura went head-to-head on this one...").
+Also, suggest 3 alternative or similar movies for the user to watch next.
+Output strictly as JSON: {"explanation": "<host-style summary of the debate>", "recommendations": ["Movie Title 1", "Movie Title 2", "Movie Title 3"]}"""
 
     user_prompt = f"Movie: {title}\nCalculated Consensus Score: {consensus_score}/10\nAgent Outputs:\n{json.dumps(agent_outputs, indent=2)}"
 
@@ -110,12 +111,14 @@ Output strictly as JSON: {"explanation": "<2-3 paragraphs synthesizing the debat
             content = data["candidates"][0]["content"]["parts"][0]["text"]
             parsed = json.loads(content)
             explanation = parsed.get("explanation", "Consensus reached.")
+            recommendations = parsed.get("recommendations", [])
             
             log.info("Consensus evaluation complete", score=consensus_score, confidence=confidence)
             return ConsensusOutput(
                 consensus_score=consensus_score,
                 explanation=explanation,
-                confidence=confidence
+                confidence=confidence,
+                recommendations=recommendations
             )
         except (KeyError, json.JSONDecodeError, ValueError) as e:
             log.error("JSON decode error", error=str(e), data=data)

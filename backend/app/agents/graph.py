@@ -62,7 +62,7 @@ async def critic_node(state: AgentState):
 async def vibes_node(state: AgentState):
     movie_id = state["movie_metadata"].get("id", 0)
     try:
-        res = await run_vibes_agent(state["movie_metadata"], state["mood"], state["session_id"])
+        res = await run_vibes_agent(state["movie_metadata"], state["mood"], state["outputs"], state["session_id"])
         out_dict = res.model_dump()
         score_val = out_dict.get("score")
         await _persist_agent_run(state["session_id"], movie_id, "vibes", out_dict, float(score_val) if score_val is not None else 0.0, "ok")
@@ -75,7 +75,7 @@ async def vibes_node(state: AgentState):
 async def hidden_gems_node(state: AgentState):
     movie_id = state["movie_metadata"].get("id", 0)
     try:
-        res = await run_hidden_gems_agent(state["movie_metadata"], state["session_id"])
+        res = await run_hidden_gems_agent(state["movie_metadata"], state["outputs"], state["session_id"])
         out_dict = res.model_dump()
         score_val = out_dict.get("score")
         await _persist_agent_run(state["session_id"], movie_id, "hidden_gems", out_dict, float(score_val) if score_val is not None else 0.0, "ok")
@@ -135,17 +135,12 @@ workflow.add_node("hidden_gems", hidden_gems_node)
 workflow.add_node("data", data_node)
 workflow.add_node("consensus", consensus_node)
 
-# Add edges (parallel execution, then consensus)
-workflow.add_edge(START, "critic")
-workflow.add_edge(START, "vibes")
-workflow.add_edge(START, "hidden_gems")
+# Add edges (sequential human-like back-and-forth debate)
 workflow.add_edge(START, "data")
-
-workflow.add_edge("critic", "consensus")
-workflow.add_edge("vibes", "consensus")
+workflow.add_edge("data", "critic")
+workflow.add_edge("critic", "vibes")
+workflow.add_edge("vibes", "hidden_gems")
 workflow.add_edge("hidden_gems", "consensus")
-workflow.add_edge("data", "consensus")
-
 workflow.add_edge("consensus", END)
 
 graph = workflow.compile()

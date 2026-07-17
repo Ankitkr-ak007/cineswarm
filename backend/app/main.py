@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.models import RecommendRequest, RecommendResponse, FeedbackRequest, FeedbackResponse
-from app.core.tmdb import fetch_movie_metadata
+from app.core.tmdb import fetch_movie_metadata, suggest_movies_from_llm
 from app.api.ws import router as ws_router, session_states
 from app.api.auth import router as auth_router
 from app.core.safety import is_safe_for_kids
@@ -55,9 +55,9 @@ async def recommend_movie(request: Request, body: RecommendRequest):
     # and pass it to the agents, since the prompt didn't specify how to select the candidate!
     # Ah, the prompt: "where four AI agents debate a candidate movie in real time"
     # I'll just pick "Inception" or a random popular movie to serve as the candidate for the debate.
-    candidate_titles = ["Inception", "The Matrix", "The Dark Knight", "Finding Nemo", "Toy Story", "Shrek", "Spider-Man"]
-    
     try:
+        candidate_titles = await suggest_movies_from_llm(body.mood, body.genres, body.content_mode)
+        
         movie_metadata = None
         for title in candidate_titles:
             try:
@@ -69,6 +69,19 @@ async def recommend_movie(request: Request, body: RecommendRequest):
             except Exception:
                 continue
                 
+        if not movie_metadata:
+            # Fallback if no dynamically suggested movie works
+            fallback_titles = ["Toy Story", "Finding Nemo", "Inception", "Inside Out"]
+            for title in fallback_titles:
+                try:
+                    meta = await fetch_movie_metadata(title)
+                    if body.content_mode == "kids" and not is_safe_for_kids(meta):
+                        continue
+                    movie_metadata = meta
+                    break
+                except Exception:
+                    continue
+                    
         if not movie_metadata:
             raise HTTPException(status_code=404, detail="No suitable candidate movie found")
                 

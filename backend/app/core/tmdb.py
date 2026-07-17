@@ -83,3 +83,42 @@ async def fetch_movie_metadata(title: str) -> dict:
                     
         details_data["certification"] = certification
         return details_data
+
+async def suggest_movies_from_llm(mood: str, genres: list[str], content_mode: str) -> list[str]:
+    """Ask Gemini to suggest 5 movie titles that fit the mood and genres."""
+    if not settings.GEMINI_API_KEY:
+        return ["Toy Story", "Inception", "Finding Nemo", "Inside Out"]
+        
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={settings.GEMINI_API_KEY}"
+    headers = {"Content-Type": "application/json"}
+    
+    genres_str = ", ".join(genres)
+    system_prompt = "You are a movie recommendation assistant. Suggest 5 real, popular movies matching the user's request. Output strictly as a JSON array of strings: [\"Movie 1\", \"Movie 2\", ...]"
+    user_prompt = f"Mood/Vibe: {mood}\nGenres: {genres_str}\nContent Mode: {content_mode} (if 'kids', only suggest family-friendly movies rating G/PG)"
+    
+    payload = {
+        "contents": [
+            {"role": "user", "parts": [{"text": system_prompt + "\n\n" + user_prompt}]}
+        ],
+        "generationConfig": {
+            "responseMimeType": "application/json",
+            "temperature": 0.7
+        }
+    }
+    
+    try:
+        import json
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, headers=headers, json=payload, timeout=15.0)
+            response.raise_for_status()
+            data = response.json()
+            content = data["candidates"][0]["content"]["parts"][0]["text"]
+            titles = json.loads(content)
+            if isinstance(titles, list):
+                return [str(t) for t in titles]
+    except Exception:
+        pass
+    
+    # Fallback list if Gemini fails
+    return ["Toy Story", "Inception", "Finding Nemo", "Inside Out"]
+

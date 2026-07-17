@@ -38,11 +38,12 @@ class GeminiError(Exception):
     wait=wait_exponential(multiplier=2, min=4, max=30),
     retry=retry_if_exception_type((httpx.RequestError, GeminiError))
 )
-async def run_hidden_gems_agent(movie_metadata: dict, session_id: str) -> HiddenGemsOutput:
+async def run_hidden_gems_agent(movie_metadata: dict, outputs: dict, session_id: str) -> HiddenGemsOutput:
     """
     Hidden Gems agent: Vector similarity over plot embeddings vs. user's liked movies.
     We mock the 'user liked movies' logic by finding similar movies in the DB,
-    then asking Gemini to evaluate if it's a hidden gem based on similarity.
+    then asking Gemini to evaluate if it's a hidden gem based on similarity,
+    and responding to the opinions of Roger and Aura.
     """
     log = logger.bind(session_id=session_id, agent="hidden_gems")
     log.info("Starting hidden gems agent execution")
@@ -103,11 +104,27 @@ async def run_hidden_gems_agent(movie_metadata: dict, session_id: str) -> Hidden
             pass
 
     # 3. Call Gemini to evaluate
-    system_prompt = """You are a Hidden Gems analyst evaluating a candidate movie.
-You look for underappreciated movies or strong thematic similarities to other great movies.
-Output strictly as JSON: {"score": <1-10>, "reasoning": "<2-3 sentences>", "similar_to": "<movie titles>"}"""
+    system_prompt = """You are Pixel, a friendly, enthusiastic, and curious 'Hidden Gems' scout.
+Evaluate the candidate movie to see if it's an underappreciated masterpiece or has strong thematic links to other great movies.
+Speak like a real human: passionate, conversational, and knowledgeable about niche cinema.
+Look at what Roger (the Critic) and Aura (the Vibes Analyst) have said about the movie. Feel free to reference their opinions in your review (e.g. 'Roger has some valid critique on the pacing, but I think...', or 'I agree with Aura's vibe check, but what makes this a real gem is...').
+Output strictly as JSON: {"score": <1-10>, "reasoning": "<natural, conversational hidden gem analysis, reacting to Roger and/or Aura if applicable>", "similar_to": "<movie titles>"}"""
 
-    user_prompt = f"Evaluate the movie: '{title}'. Overview: {overview}\nSimilar movies found in our database: {similar_movies_str}"
+    critic_output = outputs.get("critic", {})
+    critic_critique = critic_output.get("reasoning", "")
+    critic_score = critic_output.get("score")
+    
+    vibes_output = outputs.get("vibes", {})
+    vibes_critique = vibes_output.get("reasoning", "")
+    vibes_score = vibes_output.get("score")
+    
+    debate_context = ""
+    if critic_critique:
+        debate_context += f"\n\nRoger (the Critic) gave this movie a {critic_score}/10 and said: '{critic_critique}'"
+    if vibes_critique:
+        debate_context += f"\n\nAura (the Vibes Analyst) gave this movie a {vibes_score}/10 and said: '{vibes_critique}'"
+
+    user_prompt = f"Evaluate the movie: '{title}'. Overview: {overview}\nSimilar movies found in our database: {similar_movies_str}{debate_context}"
 
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={settings.GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
