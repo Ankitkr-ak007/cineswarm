@@ -35,8 +35,8 @@ def calculate_consensus_score(agent_scores: dict, weights: dict) -> float:
     return round(total_weighted_score / total_weight, 1)
 
 @retry(
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=2, max=10),
+    stop=stop_after_attempt(5),
+    wait=wait_exponential(multiplier=2, min=4, max=30),
     retry=retry_if_exception_type((httpx.RequestError, GeminiError))
 )
 async def run_consensus_agent(movie_metadata: dict, agent_outputs: dict, session_id: str) -> ConsensusOutput:

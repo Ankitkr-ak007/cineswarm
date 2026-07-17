@@ -45,7 +45,7 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
       try {
         const data = JSON.parse(event.data);
         
-        if (data.error) {
+        if (data.error && !data.agent) {
           setError(data.error);
           return;
         }
