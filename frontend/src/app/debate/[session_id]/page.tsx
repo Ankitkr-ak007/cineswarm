@@ -127,7 +127,7 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
   const isLoadingMovie = !movieMetadata && !error;
 
   return (
-    <div className="relative min-h-screen bg-slate-900 text-slate-100 overflow-x-hidden font-sans">
+    <div className="relative min-h-screen bg-slate-900 text-slate-100 overflow-x-hidden font-sans" suppressHydrationWarning>
       {/* Backdrop Hero (dimmed/blurred wide background) */}
       {movieMetadata?.backdrop_path && (
         <div 
