@@ -17,28 +17,12 @@ export default function RequestForm() {
   const router = useRouter();
   const [mood, setMood] = useState("");
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
-  const [kidsMode, setKidsMode] = useState(true);
-  const [pinModalOpen, setPinModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const toggleGenre = (genre: string) => {
     setSelectedGenres(prev => 
       prev.includes(genre) ? prev.filter(g => g !== genre) : [...prev, genre]
     );
-  };
-
-  const handleKidsModeToggle = (checked: boolean) => {
-    if (!checked && kidsMode) {
-      // Trying to turn it off
-      setPinModalOpen(true);
-    } else {
-      setKidsMode(true);
-    }
-  };
-
-  const onPinSuccess = () => {
-    setKidsMode(false);
-    setPinModalOpen(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,8 +33,7 @@ export default function RequestForm() {
       const { data, error } = await apiClient.POST("/api/v1/recommend", {
         body: {
           mood,
-          genres: selectedGenres,
-          content_mode: kidsMode ? "kids" : "general"
+          genres: selectedGenres
         }
       });
       
@@ -111,29 +94,12 @@ export default function RequestForm() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border">
-              <div className="space-y-1">
-                <Label className="text-base font-semibold text-slate-800">Kids Mode</Label>
-                <p className="text-sm text-slate-500">Filter out inappropriate content and adult themes.</p>
-              </div>
-              <Switch
-                checked={kidsMode}
-                onCheckedChange={handleKidsModeToggle}
-              />
-            </div>
-
             <Button type="submit" className="w-full h-12 text-lg font-semibold" disabled={loading || !mood}>
               {loading ? "Initializing Swarm..." : "Find Me a Movie"}
             </Button>
           </form>
         </CardContent>
       </Card>
-
-      <KidsModePinModal 
-        isOpen={pinModalOpen} 
-        onClose={() => setPinModalOpen(false)} 
-        onSuccess={onPinSuccess} 
-      />
     </div>
   );
 }

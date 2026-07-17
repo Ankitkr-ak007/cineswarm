@@ -56,7 +56,7 @@ async def fetch_movie_metadata(title: str) -> dict:
         details_url = f"https://api.themoviedb.org/3/movie/{movie_id}"
         details_params = {
             "api_key": settings.TMDB_API_KEY,
-            "append_to_response": "release_dates",
+            "append_to_response": "release_dates,credits,videos,watch/providers,similar",
             "language": "en-US"
         }
         
@@ -84,12 +84,63 @@ async def fetch_movie_metadata(title: str) -> dict:
         details_data["certification"] = certification
         return details_data
 
+async def fetch_movie_details_by_id(movie_id: int) -> dict:
+    """Fetch full movie details from TMDB by movie ID (with appends)."""
+    if not settings.TMDB_API_KEY:
+        raise ValueError("TMDB_API_KEY is not set")
+        
+    url = f"https://api.themoviedb.org/3/movie/{movie_id}"
+    params = {
+        "api_key": settings.TMDB_API_KEY,
+        "append_to_response": "release_dates,credits,videos,watch/providers,similar",
+        "language": "en-US"
+    }
+    headers = {"accept": "application/json"}
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, params=params, headers=headers, timeout=10.0)
+        response.raise_for_status()
+        details_data = response.json()
+        
+        # Extract US certification
+        certification = None
+        release_dates = details_data.get("release_dates", {}).get("results", [])
+        for rd in release_dates:
+            if rd.get("iso_3166_1") == "US":
+                for release in rd.get("release_dates", []):
+                    if release.get("certification"):
+                        certification = release.get("certification")
+                        break
+                if certification:
+                    break
+        details_data["certification"] = certification
+        return details_data
+
+def extract_cast(movie_metadata: dict) -> list[str]:
+    cast_list = movie_metadata.get("credits", {}).get("cast", [])[:5]
+    return [member.get("name") for member in cast_list if isinstance(member, dict) and member.get("name")]
+
+def extract_trailer_key(movie_metadata: dict) -> str | None:
+    videos = movie_metadata.get("videos", {}).get("results", [])
+    for v in videos:
+        if isinstance(v, dict) and v.get("site") == "YouTube" and v.get("type") in ["Trailer", "Teaser"]:
+            return v.get("key")
+    return None
+
+def extract_watch_providers(movie_metadata: dict) -> list[dict]:
+    providers = movie_metadata.get("watch/providers", {}).get("results", {}).get("US", {}).get("flatrate", [])
+    return [{"name": p.get("provider_name"), "logo_path": p.get("logo_path")} for p in providers if isinstance(p, dict)]
+
+def extract_similar_movies(movie_metadata: dict) -> list[dict]:
+    similar = movie_metadata.get("similar", {}).get("results", [])[:6]
+    return [{"id": m.get("id"), "title": m.get("title"), "poster_path": m.get("poster_path")} for m in similar if isinstance(m, dict)]
+
 async def suggest_movies_from_llm(mood: str, genres: list[str], content_mode: str) -> list[str]:
     """Ask Gemini to suggest 5 movie titles that fit the mood and genres."""
     if not settings.GEMINI_API_KEY:
         return ["Toy Story", "Inception", "Finding Nemo", "Inside Out"]
         
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={settings.GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
     
     genres_str = ", ".join(genres)

@@ -11,7 +11,6 @@ class EvaluateResponse(BaseModel):
 class RecommendRequest(BaseModel):
     mood: str = Field(..., description="The current mood of the user.")
     genres: list[str] = Field(default_factory=list, description="Preferred genres.")
-    content_mode: str = Field(default="general", description="The mode of content recommendation.")
 
 class RecommendResponse(BaseModel):
     session_id: str = Field(..., description="A unique identifier for the recommendation session.")

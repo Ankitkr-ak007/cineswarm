@@ -3,6 +3,13 @@ from typing import Dict
 import structlog
 from app.agents.graph import graph
 from app.db.supabase import get_supabase_client
+from app.core.tmdb import (
+    extract_cast,
+    extract_trailer_key,
+    extract_watch_providers,
+    extract_similar_movies,
+    fetch_movie_details_by_id,
+)
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
@@ -33,6 +40,29 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
     if db_runs:
         log.info("Found existing agent runs in database, sending historical data")
         try:
+            # Try to fetch and send movie info first
+            movie_id = db_runs[0].get("movie_id")
+            if movie_id:
+                try:
+                    movie_metadata = await fetch_movie_details_by_id(movie_id)
+                    await websocket.send_json({
+                        "status": "movie_info",
+                        "movie_metadata": {
+                            "id": movie_metadata.get("id"),
+                            "title": movie_metadata.get("title"),
+                            "overview": movie_metadata.get("overview"),
+                            "poster_path": movie_metadata.get("poster_path"),
+                            "backdrop_path": movie_metadata.get("backdrop_path"),
+                            "release_date": movie_metadata.get("release_date"),
+                            "cast": extract_cast(movie_metadata),
+                            "trailer_key": extract_trailer_key(movie_metadata),
+                            "watch_providers": extract_watch_providers(movie_metadata),
+                            "similar_movies": extract_similar_movies(movie_metadata),
+                        }
+                    })
+                except Exception as ex:
+                    log.warning("Could not fetch movie details for history load", error=str(ex))
+            
             for run in db_runs:
                 agent_name = run.get("agent_name")
                 output = run.get("output")
@@ -70,6 +100,28 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
         await websocket.send_json({"error": "Session not found or already running"})
         await websocket.close()
         return
+
+    # Send movie info to the client immediately
+    movie_metadata = state.get("movie_metadata", {})
+    if movie_metadata:
+        try:
+            await websocket.send_json({
+                "status": "movie_info",
+                "movie_metadata": {
+                    "id": movie_metadata.get("id"),
+                    "title": movie_metadata.get("title"),
+                    "overview": movie_metadata.get("overview"),
+                    "poster_path": movie_metadata.get("poster_path"),
+                    "backdrop_path": movie_metadata.get("backdrop_path"),
+                    "release_date": movie_metadata.get("release_date"),
+                    "cast": extract_cast(movie_metadata),
+                    "trailer_key": extract_trailer_key(movie_metadata),
+                    "watch_providers": extract_watch_providers(movie_metadata),
+                    "similar_movies": extract_similar_movies(movie_metadata),
+                }
+            })
+        except Exception as ex:
+            log.warning("Could not send initial movie info", error=str(ex))
 
     from typing import cast
     from app.agents.graph import AgentState

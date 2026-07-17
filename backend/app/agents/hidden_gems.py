@@ -126,7 +126,7 @@ Output strictly as JSON: {"score": <1-10>, "reasoning": "<natural, conversationa
 
     user_prompt = f"Evaluate the movie: '{title}'. Overview: {overview}\nSimilar movies found in our database: {similar_movies_str}{debate_context}"
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={settings.GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
     payload = {
         "contents": [

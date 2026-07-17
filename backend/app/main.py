@@ -3,8 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.models import RecommendRequest, RecommendResponse, FeedbackRequest, FeedbackResponse
 from app.core.tmdb import fetch_movie_metadata, suggest_movies_from_llm
 from app.api.ws import router as ws_router, session_states
-from app.api.auth import router as auth_router
-from app.core.safety import is_safe_for_kids
 from app.db.supabase import get_supabase_client
 import uuid
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -29,7 +27,6 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore
 
 app.include_router(ws_router)
-app.include_router(auth_router)
 
 @app.get("/")
 def read_root():
@@ -44,26 +41,15 @@ def health_check():
 async def recommend_movie(request: Request, body: RecommendRequest):
     session_id = str(uuid.uuid4())
     log = logger.bind(session_id=session_id)
-    log.info("Received recommendation request", mode=body.content_mode)
+    log.info("Received recommendation request")
     
-    # In a real app we'd search TMDB based on genres/mood, but to keep the flow identical to Phase 2
-    # where we had a specific title, let's assume we do a TMDB discover call or the user passes a title.
-    # Wait, the prompt says Body: { "mood": string, "genres": string[], "content_mode": "kids"|"general" }
-    # Since we need a candidate movie, let's just fetch top popular movies and pick one that fits, 
-    # or just use TMDB discover. To keep it simple, let's search TMDB discover by genre.
-    # Since TMDB discover by genre is complex without genre ID mapping, let's just fetch a generic popular movie
-    # and pass it to the agents, since the prompt didn't specify how to select the candidate!
-    # Ah, the prompt: "where four AI agents debate a candidate movie in real time"
-    # I'll just pick "Inception" or a random popular movie to serve as the candidate for the debate.
     try:
-        candidate_titles = await suggest_movies_from_llm(body.mood, body.genres, body.content_mode)
+        candidate_titles = await suggest_movies_from_llm(body.mood, body.genres, "general")
         
         movie_metadata = None
         for title in candidate_titles:
             try:
                 meta = await fetch_movie_metadata(title)
-                if body.content_mode == "kids" and not is_safe_for_kids(meta):
-                    continue
                 movie_metadata = meta
                 break
             except Exception:
@@ -75,8 +61,6 @@ async def recommend_movie(request: Request, body: RecommendRequest):
             for title in fallback_titles:
                 try:
                     meta = await fetch_movie_metadata(title)
-                    if body.content_mode == "kids" and not is_safe_for_kids(meta):
-                        continue
                     movie_metadata = meta
                     break
                 except Exception:
@@ -91,7 +75,7 @@ async def recommend_movie(request: Request, body: RecommendRequest):
             try:
                 supabase.table("sessions").insert({
                     "id": session_id,
-                    "query_context": {"mood": body.mood, "genres": body.genres, "mode": body.content_mode}
+                    "query_context": {"mood": body.mood, "genres": body.genres, "mode": "general"}
                 }).execute()
             except Exception as e:
                 log.warning("Could not persist session to DB", error=str(e))

@@ -86,7 +86,7 @@ Output strictly as JSON: {"explanation": "<host-style summary of the debate>", "
 
     user_prompt = f"Movie: {title}\nCalculated Consensus Score: {consensus_score}/10\nAgent Outputs:\n{json.dumps(agent_outputs, indent=2)}"
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={settings.GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
     payload = {
         "contents": [
