@@ -45,8 +45,46 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
   const [movieMetadata, setMovieMetadata] = useState<MovieMetadata | null>(null);
   const [trailerExpanded, setTrailerExpanded] = useState(false);
   const [recommendingSimilar, setRecommendingSimilar] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const checkFavorite = async () => {
+      if (!movieMetadata?.id) return;
+      try {
+        const { data } = await apiClient.GET("/api/v1/favorites");
+        if (data) {
+          const found = (data as { tmdb_id: number }[]).some(fav => fav.tmdb_id === movieMetadata.id);
+          setIsSaved(found);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    checkFavorite();
+  }, [movieMetadata]);
+
+  const handleSaveFavorite = async () => {
+    if (!movieMetadata?.id) return;
+    setSaving(true);
+    try {
+      const { error } = await apiClient.POST("/api/v1/favorites", {
+        body: { movie_id: movieMetadata.id, watched: false }
+      });
+      if (!error) {
+        setIsSaved(true);
+        alert("Saved to Watchlist!");
+      } else {
+        alert("Failed to save movie");
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   useEffect(() => {
     // Scroll to bottom when messages update
@@ -192,7 +230,21 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
             {/* Movie metadata details */}
             <div className="flex-1 space-y-4 pt-2">
               <div>
-                <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full">Now Debating</span>
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full">Now Debating</span>
+                  <button
+                    onClick={handleSaveFavorite}
+                    disabled={isSaved || saving}
+                    className={`px-3 py-0.5 rounded-full text-[10px] font-bold transition-all flex items-center gap-1.5 ${
+                      isSaved 
+                        ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 cursor-default" 
+                        : "bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer"
+                    }`}
+                  >
+                    <span>⭐</span>
+                    {isSaved ? "Saved" : "Save to Watchlist"}
+                  </button>
+                </div>
                 <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight mt-2.5">{movieMetadata.title}</h2>
                 {movieMetadata.release_date && (
                   <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-1">

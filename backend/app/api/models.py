@@ -30,3 +30,19 @@ class FeedbackRequest(BaseModel):
 
 class FeedbackResponse(BaseModel):
     success: bool
+
+class TitleRecommendRequest(BaseModel):
+    title: str = Field(..., description="The exact title of the movie to search for.")
+
+class FavoriteRequest(BaseModel):
+    movie_id: int
+    watched: bool = False
+
+class FavoriteResponse(BaseModel):
+    success: bool
+
+class MovieHistoryItem(BaseModel):
+    tmdb_id: int
+    title: str
+    poster_path: str | None = None
+    created_at: str

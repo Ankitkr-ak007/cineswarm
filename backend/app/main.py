@@ -1,6 +1,15 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.models import RecommendRequest, RecommendResponse, FeedbackRequest, FeedbackResponse
+from app.api.models import (
+    RecommendRequest,
+    RecommendResponse,
+    FeedbackRequest,
+    FeedbackResponse,
+    TitleRecommendRequest,
+    FavoriteRequest,
+    FavoriteResponse,
+    MovieHistoryItem,
+)
 from app.core.tmdb import fetch_movie_metadata, suggest_movies_from_llm
 from app.api.ws import router as ws_router, session_states
 from app.db.supabase import get_supabase_client
@@ -97,6 +106,113 @@ async def recommend_movie(request: Request, body: RecommendRequest):
     except Exception as e:
         log.exception("Error preparing recommendation")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/v1/recommend/title", response_model=RecommendResponse)
+@limiter.limit("5/minute")
+async def recommend_movie_by_title(request: Request, body: TitleRecommendRequest):
+    session_id = str(uuid.uuid4())
+    log = logger.bind(session_id=session_id)
+    log.info("Received title recommendation request", title=body.title)
+    
+    try:
+        movie_metadata = await fetch_movie_metadata(body.title)
+        
+        # Persist session to DB
+        supabase = get_supabase_client()
+        if supabase:
+            try:
+                # Ensure the movie exists in the movies table to prevent foreign key errors in agent_runs!
+                m_res = supabase.table("movies").select("*").eq("tmdb_id", movie_metadata.get("id")).execute()
+                if not m_res.data:
+                    supabase.table("movies").insert({
+                        "tmdb_id": movie_metadata.get("id"),
+                        "title": movie_metadata.get("title"),
+                        "overview": movie_metadata.get("overview"),
+                        "genres": movie_metadata.get("genres"),
+                        "release_date": movie_metadata.get("release_date"),
+                        "adult": movie_metadata.get("adult"),
+                        "poster_path": movie_metadata.get("poster_path")
+                    }).execute()
+
+                supabase.table("sessions").insert({
+                    "id": session_id,
+                    "query_context": {"mood": f"Search by title: {body.title}", "genres": [], "mode": "general"}
+                }).execute()
+            except Exception as e:
+                log.warning("Could not persist session to DB", error=str(e))
+                
+        # Store state for WebSocket
+        session_states[session_id] = {
+            "session_id": session_id,
+            "movie_metadata": movie_metadata,
+            "mood": f"Direct search: {body.title}",
+            "outputs": {},
+            "errors": {},
+            "final_result": None
+        }
+        
+        return RecommendResponse(session_id=session_id)
+        
+    except Exception as e:
+        log.exception("Error initiating title recommendation")
+        raise HTTPException(status_code=500, detail="Failed to search movie and initiate debate")
+
+@app.post("/api/v1/favorites", response_model=FavoriteResponse)
+@limiter.limit("10/minute")
+async def save_favorite(request: Request, body: FavoriteRequest):
+    log = logger.bind(movie_id=body.movie_id)
+    supabase = get_supabase_client()
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Database not configured")
+    try:
+        # Check if the movie exists in movies table to prevent foreign key errors!
+        m_res = supabase.table("movies").select("*").eq("tmdb_id", body.movie_id).execute()
+        if not m_res.data:
+            # Fetch and save movie to movies table
+            from app.core.tmdb import fetch_movie_details_by_id
+            details = await fetch_movie_details_by_id(body.movie_id)
+            supabase.table("movies").insert({
+                "tmdb_id": details.get("id"),
+                "title": details.get("title"),
+                "overview": details.get("overview"),
+                "genres": details.get("genres"),
+                "release_date": details.get("release_date"),
+                "adult": details.get("adult"),
+                "poster_path": details.get("poster_path")
+            }).execute()
+
+        # Insert into feedback
+        supabase.table("feedback").insert({
+            "id": str(uuid.uuid4()),
+            "movie_id": body.movie_id,
+            "watched": body.watched
+        }).execute()
+        return FavoriteResponse(success=True)
+    except Exception as e:
+        log.error("Failed to save favorite", error=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to save favorite: {str(e)}")
+
+@app.get("/api/v1/favorites", response_model=list[MovieHistoryItem])
+async def get_favorites():
+    supabase = get_supabase_client()
+    if not supabase:
+        raise HTTPException(status_code=500, detail="Database not configured")
+    try:
+        res = supabase.table("feedback").select("*, movies(*)").order("created_at", { "ascending": False }).execute()
+        items = []
+        for item in res.data or []:
+            movie = item.get("movies")
+            if movie:
+                items.append(MovieHistoryItem(
+                    tmdb_id=movie.get("tmdb_id"),
+                    title=movie.get("title"),
+                    poster_path=movie.get("poster_path"),
+                    created_at=item.get("created_at")
+                ))
+        return items
+    except Exception as e:
+        logger.error("Failed to fetch favorites", error=str(e))
+        raise HTTPException(status_code=500, detail="Failed to fetch favorites")
 
 @app.post("/api/v1/feedback", response_model=FeedbackResponse)
 @limiter.limit("10/minute")
