@@ -42,7 +42,11 @@ async def fetch_movie_metadata(title: str) -> dict:
                         "watch/providers": genres_data.get("watch/providers"),
                         "similar": genres_data.get("similar"),
                         "release_dates": genres_data.get("release_dates"),
-                        "certification": movie.get("certification")
+                        "certification": movie.get("certification"),
+                        "genres": genres_data.get("genres") if isinstance(genres_data, dict) else movie.get("genres"),
+                        "vote_average": genres_data.get("vote_average") if isinstance(genres_data, dict) and "vote_average" in genres_data else (movie.get("vote_average") or 0.0),
+                        "vote_count": genres_data.get("vote_count") if isinstance(genres_data, dict) and "vote_count" in genres_data else (movie.get("vote_count") or 0),
+                        "popularity": genres_data.get("popularity") if isinstance(genres_data, dict) and "popularity" in genres_data else (movie.get("popularity") or 0.0),
                     }
                     logger.info("Found cached movie in database by title", title=title, id=metadata["id"])
                     return metadata
@@ -125,7 +129,10 @@ async def fetch_movie_metadata(title: str) -> dict:
                     "watch/providers": details_data.get("watch/providers"),
                     "similar": details_data.get("similar"),
                     "release_dates": details_data.get("release_dates"),
-                    "backdrop_path": details_data.get("backdrop_path")
+                    "backdrop_path": details_data.get("backdrop_path"),
+                    "vote_average": details_data.get("vote_average"),
+                    "vote_count": details_data.get("vote_count"),
+                    "popularity": details_data.get("popularity")
                 }
                 supabase.table("movies").upsert({
                     "tmdb_id": details_data.get("id"),
@@ -165,7 +172,11 @@ async def fetch_movie_details_by_id(movie_id: int) -> dict:
                         "watch/providers": genres_data.get("watch/providers"),
                         "similar": genres_data.get("similar"),
                         "release_dates": genres_data.get("release_dates"),
-                        "certification": movie.get("certification")
+                        "certification": movie.get("certification"),
+                        "genres": genres_data.get("genres") if isinstance(genres_data, dict) else movie.get("genres"),
+                        "vote_average": genres_data.get("vote_average") if isinstance(genres_data, dict) and "vote_average" in genres_data else (movie.get("vote_average") or 0.0),
+                        "vote_count": genres_data.get("vote_count") if isinstance(genres_data, dict) and "vote_count" in genres_data else (movie.get("vote_count") or 0),
+                        "popularity": genres_data.get("popularity") if isinstance(genres_data, dict) and "popularity" in genres_data else (movie.get("popularity") or 0.0),
                     }
                     logger.info("Found cached movie in database by ID", id=movie_id)
                     return metadata
@@ -211,7 +222,10 @@ async def fetch_movie_details_by_id(movie_id: int) -> dict:
                     "watch/providers": details_data.get("watch/providers"),
                     "similar": details_data.get("similar"),
                     "release_dates": details_data.get("release_dates"),
-                    "backdrop_path": details_data.get("backdrop_path")
+                    "backdrop_path": details_data.get("backdrop_path"),
+                    "vote_average": details_data.get("vote_average"),
+                    "vote_count": details_data.get("vote_count"),
+                    "popularity": details_data.get("popularity")
                 }
                 supabase.table("movies").upsert({
                     "tmdb_id": details_data.get("id"),
@@ -248,40 +262,22 @@ def extract_similar_movies(movie_metadata: dict) -> list[dict]:
     return [{"id": m.get("id"), "title": m.get("title"), "poster_path": m.get("poster_path")} for m in similar if isinstance(m, dict)]
 
 async def suggest_movies_from_llm(mood: str, genres: list[str], content_mode: str) -> list[str]:
-    """Ask Gemini to suggest 5 movie titles that fit the mood and genres."""
-    if not settings.GEMINI_API_KEY:
-        return ["Toy Story", "Inception", "Finding Nemo", "Inside Out"]
-        
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
-    headers = {"Content-Type": "application/json"}
+    """Ask LLM to suggest 5 movie titles that fit the mood and genres."""
+    from app.core.llm import generate_json_with_fallback
     
     genres_str = ", ".join(genres)
-    system_prompt = "You are a movie recommendation assistant. Suggest 5 real, popular movies matching the user's request. Output strictly as a JSON array of strings: [\"Movie 1\", \"Movie 2\", ...]"
+    system_prompt = "You are a movie recommendation assistant. Suggest 5 real, popular movies matching the user's request. Output strictly as JSON: {\"titles\": [\"Movie 1\", \"Movie 2\", \"Movie 3\", \"Movie 4\", \"Movie 5\"]}"
     user_prompt = f"Mood/Vibe: {mood}\nGenres: {genres_str}\nContent Mode: {content_mode} (if 'kids', only suggest family-friendly movies rating G/PG)"
     
-    payload = {
-        "contents": [
-            {"role": "user", "parts": [{"text": system_prompt + "\n\n" + user_prompt}]}
-        ],
-        "generationConfig": {
-            "responseMimeType": "application/json",
-            "temperature": 0.7
-        }
-    }
-    
     try:
-        import json
-        async with httpx.AsyncClient() as client:
-            response = await client.post(url, headers=headers, json=payload, timeout=15.0)
-            response.raise_for_status()
-            data = response.json()
-            content = data["candidates"][0]["content"]["parts"][0]["text"]
-            titles = json.loads(content)
-            if isinstance(titles, list):
-                return [str(t) for t in titles]
-    except Exception:
-        pass
+        parsed = await generate_json_with_fallback(system_prompt, user_prompt, temperature=0.7)
+        if isinstance(parsed, dict) and "titles" in parsed and isinstance(parsed["titles"], list):
+            return [str(t) for t in parsed["titles"]]
+        elif isinstance(parsed, list):
+            return [str(t) for t in parsed]
+    except Exception as e:
+        logger.warning("LLM movie recommendation failed, using defaults", error=str(e))
     
-    # Fallback list if Gemini fails
+    # Fallback list if LLM fails
     return ["Toy Story", "Inception", "Finding Nemo", "Inside Out"]
 

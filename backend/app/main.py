@@ -122,17 +122,14 @@ async def recommend_movie_by_title(request: Request, body: TitleRecommendRequest
         if supabase:
             try:
                 # Ensure the movie exists in the movies table to prevent foreign key errors in agent_runs!
-                m_res = supabase.table("movies").select("*").eq("tmdb_id", movie_metadata.get("id")).execute()
-                if not m_res.data:
-                    supabase.table("movies").insert({
-                        "tmdb_id": movie_metadata.get("id"),
-                        "title": movie_metadata.get("title"),
-                        "overview": movie_metadata.get("overview"),
-                        "genres": movie_metadata.get("genres"),
-                        "release_date": movie_metadata.get("release_date"),
-                        "adult": movie_metadata.get("adult"),
-                        "poster_path": movie_metadata.get("poster_path")
-                    }).execute()
+                supabase.table("movies").upsert({
+                    "tmdb_id": movie_metadata.get("id"),
+                    "title": movie_metadata.get("title"),
+                    "overview": movie_metadata.get("overview"),
+                    "release_date": movie_metadata.get("release_date"),
+                    "adult": movie_metadata.get("adult"),
+                    "poster_path": movie_metadata.get("poster_path")
+                }).execute()
 
                 supabase.table("sessions").insert({
                     "id": session_id,
@@ -165,21 +162,16 @@ async def save_favorite(request: Request, body: FavoriteRequest):
     if not supabase:
         raise HTTPException(status_code=500, detail="Database not configured")
     try:
-        # Check if the movie exists in movies table to prevent foreign key errors!
-        m_res = supabase.table("movies").select("*").eq("tmdb_id", body.movie_id).execute()
-        if not m_res.data:
-            # Fetch and save movie to movies table
-            from app.core.tmdb import fetch_movie_details_by_id
-            details = await fetch_movie_details_by_id(body.movie_id)
-            supabase.table("movies").insert({
-                "tmdb_id": details.get("id"),
-                "title": details.get("title"),
-                "overview": details.get("overview"),
-                "genres": details.get("genres"),
-                "release_date": details.get("release_date"),
-                "adult": details.get("adult"),
-                "poster_path": details.get("poster_path")
-            }).execute()
+        from app.core.tmdb import fetch_movie_details_by_id
+        details = await fetch_movie_details_by_id(body.movie_id)
+        supabase.table("movies").upsert({
+            "tmdb_id": details.get("id"),
+            "title": details.get("title"),
+            "overview": details.get("overview"),
+            "release_date": details.get("release_date"),
+            "adult": details.get("adult"),
+            "poster_path": details.get("poster_path")
+        }).execute()
 
         # Insert into feedback
         supabase.table("feedback").insert({

@@ -143,8 +143,17 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
 
         if (data.status === "complete" && data.agent) {
           if (data.agent === "consensus") {
-            setFinalResult(data.data);
+            setFinalResult(prev => ({
+              ...prev,
+              ...data.data
+            }));
           } else {
+            if (data.agent === "data" && data.data?.actual_rating !== undefined) {
+              setFinalResult(prev => ({
+                ...prev,
+                actual_rating: data.data.actual_rating
+              }));
+            }
             // Format the object into a readable string
             let content = "";
             if (data.data) {

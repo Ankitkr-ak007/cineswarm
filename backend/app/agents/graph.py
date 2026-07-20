@@ -30,10 +30,19 @@ class AgentState(TypedDict):
     errors: Annotated[Dict[str, str], update_dict]
     final_result: Optional[Dict[str, Any]]
 
-async def _persist_agent_run(session_id: str, movie_id: int, agent_name: str, output: dict, score: float, status: str):
+async def _persist_agent_run(session_id: str, movie_id: int, agent_name: str, output: dict, score: float, status: str, movie_metadata: dict | None = None):
     supabase = get_supabase_client()
-    if supabase:
+    if supabase and movie_id:
         try:
+            if movie_metadata:
+                supabase.table("movies").upsert({
+                    "tmdb_id": movie_id,
+                    "title": movie_metadata.get("title"),
+                    "overview": movie_metadata.get("overview"),
+                    "release_date": movie_metadata.get("release_date"),
+                    "adult": movie_metadata.get("adult", False),
+                    "poster_path": movie_metadata.get("poster_path")
+                }).execute()
             supabase.table("agent_runs").insert({
                 "id": str(uuid.uuid4()),
                 "session_id": session_id,
@@ -52,11 +61,11 @@ async def critic_node(state: AgentState):
         res = await run_critic_agent(state["movie_metadata"], state["session_id"])
         out_dict = res.model_dump()
         score_val = out_dict.get("score")
-        await _persist_agent_run(state["session_id"], movie_id, "critic", out_dict, float(score_val) if score_val is not None else 0.0, "ok")
+        await _persist_agent_run(state["session_id"], movie_id, "critic", out_dict, float(score_val) if score_val is not None else 0.0, "ok", state["movie_metadata"])
         return {"outputs": {"critic": out_dict}}
     except Exception as e:
         logger.error("Critic agent failed", error=str(e))
-        await _persist_agent_run(state["session_id"], movie_id, "critic", {}, 0.0, "failed")
+        await _persist_agent_run(state["session_id"], movie_id, "critic", {}, 0.0, "failed", state["movie_metadata"])
         return {"errors": {"critic": str(e)}}
 
 async def vibes_node(state: AgentState):
@@ -65,11 +74,11 @@ async def vibes_node(state: AgentState):
         res = await run_vibes_agent(state["movie_metadata"], state["mood"], state["outputs"], state["session_id"])
         out_dict = res.model_dump()
         score_val = out_dict.get("score")
-        await _persist_agent_run(state["session_id"], movie_id, "vibes", out_dict, float(score_val) if score_val is not None else 0.0, "ok")
+        await _persist_agent_run(state["session_id"], movie_id, "vibes", out_dict, float(score_val) if score_val is not None else 0.0, "ok", state["movie_metadata"])
         return {"outputs": {"vibes": out_dict}}
     except Exception as e:
         logger.error("Vibes agent failed", error=str(e))
-        await _persist_agent_run(state["session_id"], movie_id, "vibes", {}, 0.0, "failed")
+        await _persist_agent_run(state["session_id"], movie_id, "vibes", {}, 0.0, "failed", state["movie_metadata"])
         return {"errors": {"vibes": str(e)}}
 
 async def hidden_gems_node(state: AgentState):
@@ -78,11 +87,11 @@ async def hidden_gems_node(state: AgentState):
         res = await run_hidden_gems_agent(state["movie_metadata"], state["outputs"], state["session_id"])
         out_dict = res.model_dump()
         score_val = out_dict.get("score")
-        await _persist_agent_run(state["session_id"], movie_id, "hidden_gems", out_dict, float(score_val) if score_val is not None else 0.0, "ok")
+        await _persist_agent_run(state["session_id"], movie_id, "hidden_gems", out_dict, float(score_val) if score_val is not None else 0.0, "ok", state["movie_metadata"])
         return {"outputs": {"hidden_gems": out_dict}}
     except Exception as e:
         logger.error("Hidden gems agent failed", error=str(e))
-        await _persist_agent_run(state["session_id"], movie_id, "hidden_gems", {}, 0.0, "failed")
+        await _persist_agent_run(state["session_id"], movie_id, "hidden_gems", {}, 0.0, "failed", state["movie_metadata"])
         return {"errors": {"hidden_gems": str(e)}}
 
 async def data_node(state: AgentState):
@@ -91,11 +100,11 @@ async def data_node(state: AgentState):
         res = await run_data_agent(state["movie_metadata"], state["session_id"])
         out_dict = res.model_dump()
         score_val = out_dict.get("actual_rating")
-        await _persist_agent_run(state["session_id"], movie_id, "data", out_dict, float(score_val) if score_val is not None else 0.0, "ok")
+        await _persist_agent_run(state["session_id"], movie_id, "data", out_dict, float(score_val) if score_val is not None else 0.0, "ok", state["movie_metadata"])
         return {"outputs": {"data": out_dict}}
     except Exception as e:
         logger.error("Data agent failed", error=str(e))
-        await _persist_agent_run(state["session_id"], movie_id, "data", {}, 0.0, "failed")
+        await _persist_agent_run(state["session_id"], movie_id, "data", {}, 0.0, "failed", state["movie_metadata"])
         return {"errors": {"data": str(e)}}
 
 async def consensus_node(state: AgentState):
@@ -104,7 +113,7 @@ async def consensus_node(state: AgentState):
         res = await run_consensus_agent(state["movie_metadata"], state["outputs"], state["session_id"])
         out_dict = res.model_dump()
         score_val = out_dict.get("consensus_score")
-        await _persist_agent_run(state["session_id"], movie_id, "consensus", out_dict, float(score_val) if score_val is not None else 0.0, "ok")
+        await _persist_agent_run(state["session_id"], movie_id, "consensus", out_dict, float(score_val) if score_val is not None else 0.0, "ok", state["movie_metadata"])
         
         # Persist rating
         supabase = get_supabase_client()
@@ -114,7 +123,7 @@ async def consensus_node(state: AgentState):
                     "id": str(uuid.uuid4()),
                     "session_id": state["session_id"],
                     "movie_id": movie_id,
-                    "actual_rating": state.get("outputs", {}).get("data", {}).get("actual_rating", 0.0),
+                    "actual_rating": out_dict.get("actual_rating", state.get("outputs", {}).get("data", {}).get("actual_rating", 0.0)),
                     "consensus_score": out_dict.get("consensus_score", 0.0)
                 }).execute()
             except Exception as e:
@@ -122,7 +131,7 @@ async def consensus_node(state: AgentState):
         return {"final_result": out_dict}
     except Exception as e:
         logger.error("Consensus agent failed", error=str(e))
-        await _persist_agent_run(state["session_id"], movie_id, "consensus", {}, 0.0, "failed")
+        await _persist_agent_run(state["session_id"], movie_id, "consensus", {}, 0.0, "failed", state["movie_metadata"])
         return {"errors": {"consensus": str(e)}}
 
 # Define the graph
