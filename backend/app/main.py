@@ -188,23 +188,27 @@ async def save_favorite(request: Request, body: FavoriteRequest):
 async def get_favorites():
     supabase = get_supabase_client()
     if not supabase:
-        raise HTTPException(status_code=500, detail="Database not configured")
+        return []
     try:
-        res = supabase.table("feedback").select("*, movies(*)").order("created_at", { "ascending": False }).execute()
+        res = supabase.table("feedback").select("*, movies(*)").not_.is_("movie_id", "null").order("created_at", desc=True).execute()
         items = []
+        seen = set()
         for item in res.data or []:
             movie = item.get("movies")
-            if movie:
-                items.append(MovieHistoryItem(
-                    tmdb_id=movie.get("tmdb_id"),
-                    title=movie.get("title"),
-                    poster_path=movie.get("poster_path"),
-                    created_at=item.get("created_at")
-                ))
+            if movie and isinstance(movie, dict):
+                tmdb_id = movie.get("tmdb_id")
+                if tmdb_id and tmdb_id not in seen:
+                    seen.add(tmdb_id)
+                    items.append(MovieHistoryItem(
+                        tmdb_id=tmdb_id,
+                        title=movie.get("title") or "Unknown",
+                        poster_path=movie.get("poster_path"),
+                        created_at=item.get("created_at")
+                    ))
         return items
     except Exception as e:
         logger.error("Failed to fetch favorites", error=str(e))
-        raise HTTPException(status_code=500, detail="Failed to fetch favorites")
+        return []
 
 @app.post("/api/v1/feedback", response_model=FeedbackResponse)
 @limiter.limit("10/minute")
