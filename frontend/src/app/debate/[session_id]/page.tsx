@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { DualRatingDisplay } from "@/components/DualRatingDisplay";
 import { Card, CardContent } from "@/components/ui/card";
@@ -225,8 +226,15 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
         </div>
 
         {/* Debating Movie Metadata (Task 3) */}
+        <AnimatePresence mode="wait">
         {isLoadingMovie ? (
-          <div className="bg-white dark:bg-slate-900/50 backdrop-blur-md rounded-3xl p-6 border border-slate-200 dark:border-slate-800/80 flex flex-col md:flex-row gap-8 items-start animate-pulse">
+          <motion.div
+            key="skeleton"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="bg-white dark:bg-slate-900/50 backdrop-blur-md rounded-3xl p-6 border border-slate-200 dark:border-slate-800/80 flex flex-col md:flex-row gap-8 items-start animate-pulse"
+          >
             <div className="w-full md:w-48 shrink-0 rounded-2xl bg-slate-200 dark:bg-slate-800 aspect-[2/3]" />
             <div className="flex-1 space-y-4 w-full pt-4">
               <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded-full w-24" />
@@ -238,9 +246,15 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
                 <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded-full w-5/6" />
               </div>
             </div>
-          </div>
+          </motion.div>
         ) : movieMetadata ? (
-          <div className="bg-white dark:bg-slate-900/40 backdrop-blur-md rounded-3xl p-6 border border-slate-200 dark:border-slate-800/80 flex flex-col md:flex-row gap-8 items-start shadow-2xl relative overflow-hidden transition-all duration-500">
+          <motion.div
+            key="metadata"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white dark:bg-slate-900/40 backdrop-blur-md rounded-3xl p-6 border border-slate-200 dark:border-slate-800/80 flex flex-col md:flex-row gap-8 items-start shadow-2xl relative overflow-hidden"
+          >
             {/* Poster wrapper */}
             <div className="w-full md:w-48 shrink-0 rounded-2xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-700/50 bg-slate-100 dark:bg-slate-800 aspect-[2/3] relative">
               {movieMetadata.poster_path ? (
@@ -308,8 +322,9 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
                 </div>
               )}
             </div>
-          </div>
+          </motion.div>
         ) : null}
+        </AnimatePresence>
 
         {/* Dual Rating Display */}
         <div className="bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 p-1">
@@ -338,7 +353,8 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
                     </div>
                   )}
 
-                  {agentList.map((msg, i) => {
+                  <AnimatePresence>
+                  {agentList.map((msg) => {
                     const isRoger = msg.agent.toLowerCase() === "critic";
                     const isAura = msg.agent.toLowerCase() === "vibes";
                     const isPixel = msg.agent.toLowerCase() === "hidden_gems";
@@ -346,7 +362,13 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
                     const avatarColor = isRoger ? "bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30" : isAura ? "bg-purple-500/20 text-purple-600 dark:text-purple-400 border-purple-500/30" : isPixel ? "bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30" : "bg-slate-700/20 text-slate-500 dark:text-slate-400 border-slate-700/30";
 
                     return (
-                      <div key={i} className="flex gap-4 items-start animate-fade-in">
+                      <motion.div
+                        key={msg.agent}
+                        initial={{ opacity: 0, x: -20, scale: 0.95 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        transition={{ duration: 0.4 }}
+                        className="flex gap-4 items-start"
+                      >
                         <Avatar className="mt-1 h-9 w-9 border shrink-0">
                           <AvatarFallback className={`${avatarColor} font-black text-xs uppercase`}>
                             {msg.agent.substring(0, 2)}
@@ -366,12 +388,18 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
                             {msg.content}
                           </div>
                         </div>
-                      </div>
+                      </motion.div>
                     );
                   })}
+                  </AnimatePresence>
                   
                   {finalResult && (
-                    <div className="bg-emerald-500/5 dark:bg-emerald-950/20 border border-emerald-500/20 p-6 rounded-2xl space-y-5 animate-fade-in relative overflow-hidden">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5, duration: 0.6 }}
+                      className="bg-emerald-500/5 dark:bg-emerald-950/20 border border-emerald-500/20 p-6 rounded-2xl space-y-5 relative overflow-hidden"
+                    >
                       <div className="absolute top-0 right-0 p-3 text-emerald-500/10 dark:text-emerald-500/30 text-3xl font-black select-none uppercase tracking-widest">HOST</div>
                       <div className="space-y-1.5">
                         <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">Debate Verdict</span>
@@ -422,7 +450,7 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   )}
                 </div>
               </ScrollArea>

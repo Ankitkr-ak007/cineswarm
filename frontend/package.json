@@ -14,6 +14,7 @@
     "@supabase/supabase-js": "^2.110.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "framer-motion": "^12.42.2",
     "lucide-react": "^1.24.0",
     "next": "15.5.20",
     "openapi-fetch": "^0.17.0",

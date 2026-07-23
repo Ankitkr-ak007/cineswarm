@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -132,18 +133,34 @@ export default function RequestForm() {
 
       {/* Main Request Form container */}
       <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 max-w-5xl mx-auto w-full">
-        <Card className="w-full max-w-2xl shadow-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 backdrop-blur-sm transition-all duration-300">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="w-full max-w-2xl"
+        >
+        <Card className="w-full shadow-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 backdrop-blur-sm transition-all duration-300">
           <CardHeader className="text-center pb-6 border-b border-slate-150 dark:border-slate-850">
-            <div className="mx-auto bg-blue-100 dark:bg-blue-950/50 w-16 h-16 rounded-full flex items-center justify-center mb-4 border border-blue-200 dark:border-blue-800/30">
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.4 }}
+              className="mx-auto bg-blue-100 dark:bg-blue-950/50 w-16 h-16 rounded-full flex items-center justify-center mb-4 border border-blue-200 dark:border-blue-800/30"
+            >
               <Film className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-            </div>
+            </motion.div>
             <CardTitle className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">CineSwarm</CardTitle>
             <CardDescription className="text-slate-500 dark:text-slate-400 text-base md:text-lg mt-1.5">
               AI Agents Debate What You Should Watch
             </CardDescription>
 
             {/* Mode selection tabs */}
-            <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-xl mt-6 border border-slate-200 dark:border-slate-700/50 max-w-xs mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
+              className="flex bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-xl mt-6 border border-slate-200 dark:border-slate-700/50 max-w-xs mx-auto"
+            >
               <button
                 onClick={() => setMode("mood")}
                 className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
@@ -166,11 +183,17 @@ export default function RequestForm() {
                 <Search className="w-3.5 h-3.5" />
                 Direct Search
               </button>
-            </div>
+            </motion.div>
           </CardHeader>
           
           <CardContent className="pt-8">
-            <form onSubmit={handleSubmit} className="space-y-8">
+            <motion.form
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4, duration: 0.4 }}
+              onSubmit={handleSubmit}
+              className="space-y-8"
+            >
               {mode === "mood" ? (
                 <>
                   {/* Mood input */}
@@ -223,31 +246,46 @@ export default function RequestForm() {
                 </div>
               )}
 
-              <Button 
-                type="submit" 
-                className="w-full h-12 text-base font-bold bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600 rounded-xl transition-all shadow-md" 
-                disabled={loading || (mode === "mood" ? !mood : !searchTitle)}
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-                {loading ? (
-                  <span className="flex items-center gap-2 justify-center">
+                <Button
+                  type="submit"
+                  className="w-full h-12 text-base font-bold bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600 rounded-xl transition-all shadow-md"
+                  disabled={loading || (mode === "mood" ? !mood : !searchTitle)}
+                >
+                  {loading ? (
+                    <span className="flex items-center gap-2 justify-center">
                     <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce [animation-delay:-0.3s]"></span>
                     <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></span>
                     <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce"></span>
-                    Initializing Swarm...
-                  </span>
-                ) : mode === "mood" ? "Find Me a Movie" : "Start Movie Debate"}
-              </Button>
-            </form>
+                      Initializing Swarm...
+                    </span>
+                  ) : mode === "mood" ? "Find Me a Movie" : "Start Movie Debate"}
+                </Button>
+              </motion.div>
+            </motion.form>
           </CardContent>
         </Card>
+        </motion.div>
 
         {/* Saved Watchlist Section */}
         {favorites.length > 0 && (
-          <div className="w-full max-w-2xl mt-12 space-y-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6, duration: 0.5 }}
+            className="w-full max-w-2xl mt-12 space-y-4"
+          >
             <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">⭐ Your Saved Watchlist</h3>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
-              {favorites.map((fav) => (
-                <div 
+              {favorites.map((fav, i) => (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.7 + (i * 0.1), duration: 0.3 }}
+                  whileHover={{ y: -5, scale: 1.05 }}
                   key={fav.tmdb_id}
                   role="button"
                   tabIndex={0}
@@ -259,7 +297,7 @@ export default function RequestForm() {
                     }
                   }}
                   aria-label={`Start debate for saved movie: ${fav.title}`}
-                  className="group cursor-pointer bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 p-2.5 rounded-2xl hover:border-slate-350 dark:hover:border-slate-700/50 hover:bg-slate-100/50 dark:hover:bg-slate-800/40 transition-all duration-300 transform hover:-translate-y-1 shadow-sm focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+                  className="group cursor-pointer bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 p-2.5 rounded-2xl hover:border-slate-350 dark:hover:border-slate-700/50 hover:bg-slate-100/50 dark:hover:bg-slate-800/40 shadow-sm focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
                 >
                   <div className="aspect-[2/3] w-full rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 relative shadow-md">
                     {fav.poster_path ? (
@@ -280,10 +318,10 @@ export default function RequestForm() {
                   <p className="text-xs font-black text-slate-700 dark:text-slate-300 truncate text-center mt-2 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors">
                     {fav.title}
                   </p>
-                </div>
+                </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
         )}
       </main>
     </div>
