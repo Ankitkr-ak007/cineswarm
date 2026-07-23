@@ -12,22 +12,34 @@ class ConsensusOutput(BaseModel):
     confidence: str
     recommendations: list[str] = []
 
-def calculate_consensus_score(scores: dict) -> float:
+def calculate_consensus_score(scores: dict, weights: dict | None = None) -> float:
     """
-    Calculates consensus score by taking average of active non-zero agent scores.
+    Calculates consensus score by taking weighted average of active non-zero agent scores.
     """
     valid_scores = []
+    valid_weights = []
+
     for agent, score in scores.items():
         if score is not None and isinstance(score, (int, float)):
             # If data agent score is 0.0 (unrated), ignore it so it doesn't penalize consensus
             if agent == "data" and score <= 0.0:
                 continue
+
             valid_scores.append(float(score))
+            if weights and agent in weights:
+                valid_weights.append(float(weights[agent]))
+            else:
+                valid_weights.append(1.0)
             
     if not valid_scores:
         return 0.0
         
-    return round(sum(valid_scores) / len(valid_scores), 1)
+    total_weight = sum(valid_weights)
+    if total_weight == 0.0:
+        return 0.0
+
+    weighted_sum = sum(score * weight for score, weight in zip(valid_scores, valid_weights))
+    return round(weighted_sum / total_weight, 1)
 
 async def run_consensus_agent(movie_metadata: dict, agent_outputs: dict, session_id: str) -> ConsensusOutput:
     """
