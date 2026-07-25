@@ -253,9 +253,49 @@ def extract_trailer_key(movie_metadata: dict) -> str | None:
             return v.get("key")
     return None
 
+from urllib.parse import quote_plus
+
+def _build_provider_link(provider_name: str, movie_title: str, tmdb_link: str | None) -> str:
+    name_lower = provider_name.lower()
+    query = quote_plus(movie_title)
+    
+    if "netflix" in name_lower:
+        return f"https://www.netflix.com/search?q={query}"
+    elif "prime" in name_lower or "amazon" in name_lower:
+        return f"https://www.primevideo.com/search/ref=atv_nb_sr?phrase={query}"
+    elif "hotstar" in name_lower or "disney" in name_lower:
+        return f"https://www.hotstar.com/in/explore?search={query}"
+    elif "jiocinema" in name_lower or "jio" in name_lower:
+        return f"https://www.jiocinema.com/search/{query}"
+    elif "zee5" in name_lower or "zee" in name_lower:
+        return f"https://www.zee5.com/search?q={query}"
+    elif "apple" in name_lower:
+        return f"https://tv.apple.com/search?term={query}"
+    elif "youtube" in name_lower or "google" in name_lower:
+        return f"https://www.youtube.com/results?search_query={query}+movie"
+    elif tmdb_link:
+        return tmdb_link
+    else:
+        return f"https://www.google.com/search?q=watch+{query}+on+{quote_plus(provider_name)}"
+
 def extract_watch_providers(movie_metadata: dict, region: str = "IN") -> list[dict]:
-    providers = movie_metadata.get("watch/providers", {}).get("results", {}).get(region, {}).get("flatrate", [])
-    return [{"name": p.get("provider_name"), "logo_path": p.get("logo_path")} for p in providers if isinstance(p, dict)]
+    results = movie_metadata.get("watch/providers", {}).get("results", {})
+    region_data = results.get(region, {})
+    tmdb_link = region_data.get("link")
+    movie_title = movie_metadata.get("title", "")
+    providers = region_data.get("flatrate", [])
+    
+    output = []
+    for p in providers:
+        if isinstance(p, dict):
+            p_name = p.get("provider_name") or "Watch Provider"
+            link = _build_provider_link(p_name, movie_title, tmdb_link)
+            output.append({
+                "name": p_name,
+                "logo_path": p.get("logo_path"),
+                "link": link
+            })
+    return output
 
 def extract_similar_movies(movie_metadata: dict) -> list[dict]:
     similar = movie_metadata.get("similar", {}).get("results", [])[:6]

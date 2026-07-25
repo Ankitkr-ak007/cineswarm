@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { apiClient } from "@/lib/api-client";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { ExternalLink } from "lucide-react";
 
 interface AgentMessage {
   agent: string;
@@ -33,7 +34,7 @@ interface MovieMetadata {
   release_date?: string;
   cast?: string[];
   trailer_key?: string | null;
-  watch_providers?: { name: string; logo_path: string | null }[];
+  watch_providers?: { name: string; logo_path: string | null; link?: string | null }[];
   similar_movies?: { id: number; title: string; poster_path: string | null }[];
 }
 
@@ -473,7 +474,13 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
                   {movieMetadata.watch_providers.length > 0 ? (
                     <div className="flex flex-wrap gap-3">
                       {movieMetadata.watch_providers.map((provider, idx) => (
-                        <div key={idx} className="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-150 dark:border-slate-750 p-1.5 pr-3.5 rounded-xl shadow-sm hover:border-slate-300 dark:hover:border-slate-600 transition-colors">
+                        <a 
+                          key={idx}
+                          href={provider.link || "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-150 dark:border-slate-750 p-1.5 pr-3.5 rounded-xl shadow-sm hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer group"
+                        >
                           {provider.logo_path ? (
                             <Image 
                               src={`https://image.tmdb.org/t/p/original${provider.logo_path}`} 
@@ -485,8 +492,11 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
                           ) : (
                             <div className="w-7 h-7 rounded-md bg-slate-200 dark:bg-slate-750 flex items-center justify-center text-[10px] font-bold">▶</div>
                           )}
-                          <span className="text-xs font-bold text-slate-600 dark:text-slate-200">{provider.name}</span>
-                        </div>
+                          <span className="text-xs font-bold text-slate-600 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors flex items-center gap-1">
+                            {provider.name}
+                            <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100" />
+                          </span>
+                        </a>
                       ))}
                     </div>
                   ) : (

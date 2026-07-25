@@ -23,7 +23,9 @@ def test_extract_watch_providers_india():
     providers = extract_watch_providers(mock_metadata)
     assert len(providers) == 2
     assert providers[0]["name"] == "JioCinema"
+    assert "jiocinema.com" in providers[0]["link"]
     assert providers[1]["name"] == "Netflix"
+    assert "netflix.com" in providers[1]["link"]
 
 def test_extract_watch_providers_fallback_custom_region():
     mock_metadata = {
