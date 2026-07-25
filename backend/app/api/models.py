@@ -12,6 +12,7 @@ class RecommendRequest(BaseModel):
     mood: str = Field(..., description="The current mood of the user.")
     genres: list[str] = Field(default_factory=list, description="Preferred genres.")
     media_type: str = Field(default="all", description="Media type: 'all', 'movie', or 'tv'")
+    industry: str = Field(default="all", description="Film industry: 'all', 'hollywood', 'bollywood', 'south_indian', 'anime_kdrama'")
 
 class RecommendResponse(BaseModel):
     session_id: str = Field(..., description="A unique identifier for the recommendation session.")

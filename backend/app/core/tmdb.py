@@ -343,8 +343,8 @@ def extract_similar_movies(movie_metadata: dict) -> list[dict]:
         for m in similar if isinstance(m, dict)
     ]
 
-async def suggest_movies_from_llm(mood: str, genres: list[str], content_mode: str, media_type: str = "all") -> list[str]:
-    """Ask LLM to suggest 5 movie or TV show titles that fit the mood and genres."""
+async def suggest_movies_from_llm(mood: str, genres: list[str], content_mode: str, media_type: str = "all", industry: str = "all") -> list[str]:
+    """Ask LLM to suggest 5 movie or TV show titles fitting mood, genres, media type, and film industry."""
     from app.core.llm import generate_json_with_fallback
     
     genres_str = ", ".join(genres)
@@ -355,11 +355,21 @@ async def suggest_movies_from_llm(mood: str, genres: list[str], content_mode: st
     else:
         type_str = "movies or TV shows"
         
-    system_prompt = f'You are an entertainment recommendation assistant. Suggest 5 real, popular {type_str} matching the user\'s request. Output strictly as JSON: {{"titles": ["Title 1", "Title 2", "Title 3", "Title 4", "Title 5"]}}'
-    user_prompt = f"Mood/Vibe: {mood}\nGenres: {genres_str}\nContent Mode: {content_mode} (if 'kids', only suggest family-friendly content)\nMedia Type Preference: {media_type}"
+    industry_desc = ""
+    if industry == "bollywood":
+        industry_desc = "specifically from Bollywood / Hindi language cinema or Indian web series"
+    elif industry == "south_indian":
+        industry_desc = "specifically from South Indian cinema (Tamil, Telugu, Malayalam, Kannada, or Pan-India cinema)"
+    elif industry == "hollywood":
+        industry_desc = "specifically from Hollywood / English language films or Western TV series"
+    elif industry == "anime_kdrama":
+        industry_desc = "specifically from Asian cinema, K-dramas (Korean dramas), or Japanese anime"
+        
+    system_prompt = f'You are an entertainment recommendation assistant. Suggest 5 real, popular {type_str} {industry_desc} matching the user\'s request. Output strictly as JSON: {{"titles": ["Title 1", "Title 2", "Title 3", "Title 4", "Title 5"]}}'
+    user_prompt = f"Mood/Vibe: {mood}\nGenres: {genres_str}\nIndustry/Region: {industry}\nContent Mode: {content_mode} (if 'kids', only suggest family-friendly content)\nMedia Type Preference: {media_type}"
     
     try:
-        parsed = await generate_json_with_fallback(system_prompt, user_prompt, temperature=0.7)
+        parsed = await generate_json_with_fallback(system_prompt, user_prompt, temperature=0.8)
         if isinstance(parsed, dict) and "titles" in parsed and isinstance(parsed["titles"], list):
             return [str(t) for t in parsed["titles"]]
         elif isinstance(parsed, list):
@@ -367,7 +377,13 @@ async def suggest_movies_from_llm(mood: str, genres: list[str], content_mode: st
     except Exception as e:
         logger.warning("LLM recommendation failed, using defaults", error=str(e))
     
-    if media_type == "tv":
-        return ["Stranger Things", "Breaking Bad", "The Office", "Game of Thrones"]
-    return ["Toy Story", "Inception", "Finding Nemo", "Inside Out"]
+    if industry == "bollywood":
+        return ["3 Idiots", "Dangal", "Sacred Games", "Pathaan", "Mirzapur", "Stree 2", "Zindagi Na Milegi Dobara"]
+    elif industry == "south_indian":
+        return ["RRR", "K.G.F: Chapter 1", "Pushpa: The Rise", "Jailer", "Manjummel Boys", "Kantara", "Leo", "Baahubali"]
+    elif industry == "anime_kdrama":
+        return ["Squid Game", "Attack on Titan", "Crash Landing on You", "Demon Slayer", "Parasite", "Death Note"]
+    elif media_type == "tv":
+        return ["Stranger Things", "Breaking Bad", "The Office", "Game of Thrones", "Chernobyl"]
+    return ["Inception", "Interstellar", "The Dark Knight", "Oppenheimer", "Toy Story"]
 

@@ -8,20 +8,28 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/api-client";
-import { Film, Search, Sparkles, Tv, Flame, Star, Zap, ArrowRight } from "lucide-react";
+import { Film, Search, Sparkles, Tv, Flame, Star, Zap, ArrowRight, Globe } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const GENRES = ["Action", "Comedy", "Drama", "Sci-Fi", "Horror", "Romance", "Animation", "Family"];
 
 const POPULAR_QUICK_PICKS = [
-  { title: "Stranger Things", type: "tv", emoji: "📺", desc: "Sci-Fi Thriller" },
-  { title: "Inception", type: "movie", emoji: "🎬", desc: "Mind-Bending Action" },
-  { title: "Breaking Bad", type: "tv", emoji: "📺", desc: "Crime Drama" },
-  { title: "The Dark Knight", type: "movie", emoji: "🎬", desc: "Superhero Masterpiece" },
-  { title: "Interstellar", type: "movie", emoji: "🎬", desc: "Sci-Fi Odyssey" },
-  { title: "The Office", type: "tv", emoji: "📺", desc: "Comfort Comedy" },
-  { title: "Dune: Part Two", type: "movie", emoji: "🎬", desc: "Epic Sci-Fi" },
-  { title: "Squid Game", type: "tv", emoji: "📺", desc: "Survival Mystery" },
+  { title: "Inception", type: "movie", emoji: "🎬", tag: "Hollywood", desc: "Mind-Bending Thriller" },
+  { title: "RRR", type: "movie", emoji: "🗡️", tag: "South Indian", desc: "Epic Action Sensation" },
+  { title: "3 Idiots", type: "movie", emoji: "🕉️", tag: "Bollywood", desc: "Iconic Comedy Drama" },
+  { title: "Stranger Things", type: "tv", emoji: "📺", tag: "Hollywood Series", desc: "Sci-Fi Mystery" },
+  { title: "Squid Game", type: "tv", emoji: "🌸", tag: "K-Drama", desc: "Survival Thriller" },
+  { title: "K.G.F: Chapter 1", type: "movie", emoji: "🗡️", tag: "South Indian", desc: "High-Octane Action" },
+  { title: "Sacred Games", type: "tv", emoji: "🕉️", tag: "Bollywood Series", desc: "Noir Crime Thriller" },
+  { title: "Interstellar", type: "movie", emoji: "🎬", tag: "Hollywood", desc: "Sci-Fi Masterpiece" },
+];
+
+const CINEMA_INDUSTRIES = [
+  { name: "All Cinema", id: "all", emoji: "🌍", desc: "Global Mixed" },
+  { name: "Hollywood", id: "hollywood", emoji: "🎬", desc: "English & Western" },
+  { name: "Bollywood", id: "bollywood", emoji: "🕉️", desc: "Hindi Cinema & Series" },
+  { name: "South Indian", id: "south_indian", emoji: "🗡️", desc: "Tamil, Telugu, Maly, Kan" },
+  { name: "Anime & Kdrama", id: "anime_kdrama", emoji: "🌸", desc: "K-Dramas & Anime" },
 ];
 
 const STREAMING_PROVIDERS = [
@@ -84,6 +92,7 @@ export default function RequestForm() {
   const router = useRouter();
   const [mode, setMode] = useState<"mood" | "search">("mood");
   const [mediaType, setMediaType] = useState<"all" | "movie" | "tv">("all");
+  const [selectedIndustry, setSelectedIndustry] = useState<string>("all");
   const [selectedPlatform, setSelectedPlatform] = useState<string>("all");
   const [mood, setMood] = useState("");
   const [searchTitle, setSearchTitle] = useState("");
@@ -151,7 +160,7 @@ export default function RequestForm() {
     const uniqueMood = `${randomMood} (random seed ${Math.random().toString(36).substring(7)})`;
     try {
       const { data, error } = await apiClient.POST("/api/v1/recommend", {
-        body: { mood: uniqueMood, genres: [], media_type: mediaType }
+        body: { mood: uniqueMood, genres: [], media_type: mediaType, industry: selectedIndustry }
       });
       if (error) {
         alert("Failed to generate surprise pick");
@@ -179,7 +188,8 @@ export default function RequestForm() {
           body: {
             mood: finalMood,
             genres: selectedGenres,
-            media_type: mediaType
+            media_type: mediaType,
+            industry: selectedIndustry
           }
         });
         
@@ -351,6 +361,31 @@ export default function RequestForm() {
           
           <CardContent className="p-6 md:p-8">
             <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Film Industry / Region Selector */}
+              <div className="space-y-3">
+                <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                  <Globe className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  Select Cinema Industry / Region
+                </Label>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {CINEMA_INDUSTRIES.map((ind) => (
+                    <button
+                      key={ind.id}
+                      type="button"
+                      onClick={() => setSelectedIndustry(ind.id)}
+                      className={`p-2.5 rounded-2xl text-xs font-bold transition-all border cursor-pointer flex flex-col items-center justify-center text-center gap-1 ${
+                        selectedIndustry === ind.id
+                          ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-500/20"
+                          : "bg-slate-100 dark:bg-slate-950/60 hover:bg-slate-200 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800"
+                      }`}
+                    >
+                      <span className="text-base">{ind.emoji}</span>
+                      <span>{ind.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Content Type Selector */}
               <div className="space-y-3">
                 <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
@@ -537,7 +572,7 @@ export default function RequestForm() {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-2xl">{item.emoji}</span>
                   <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-full uppercase">
-                    {item.type === "tv" ? "TV Series" : "Movie"}
+                    {item.tag || (item.type === "tv" ? "TV Series" : "Movie")}
                   </span>
                 </div>
                 <div className="text-sm font-black text-slate-800 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">

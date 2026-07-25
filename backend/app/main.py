@@ -54,7 +54,7 @@ async def recommend_movie(request: Request, body: RecommendRequest):
     log.info("Received recommendation request")
     
     try:
-        candidate_titles = await suggest_movies_from_llm(body.mood, body.genres, "general", media_type=body.media_type)
+        candidate_titles = await suggest_movies_from_llm(body.mood, body.genres, "general", media_type=body.media_type, industry=body.industry)
         random.shuffle(candidate_titles)
         
         movie_metadata = None
