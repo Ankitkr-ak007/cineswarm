@@ -47,28 +47,28 @@ const SWARM_AGENTS = [
     name: "Roger",
     role: "Film & Narrative Critic",
     avatar: "🎬",
-    color: "from-rose-500/20 to-red-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400",
+    color: "from-rose-500/10 to-red-500/5 dark:from-rose-500/20 dark:to-red-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400",
     desc: "Analyzes structural craft, pacing, and performances."
   },
   {
     name: "Aura",
     role: "Atmosphere & Vibe Architect",
     avatar: "🔮",
-    color: "from-purple-500/20 to-indigo-500/10 border-purple-500/30 text-purple-600 dark:text-purple-400",
+    color: "from-purple-500/10 to-indigo-500/5 dark:from-purple-500/20 dark:to-indigo-500/10 border-purple-500/30 text-purple-600 dark:text-purple-400",
     desc: "Matches your exact emotional mood and aesthetic."
   },
   {
     name: "Pixel",
     role: "Hidden Gem Scout",
     avatar: "💎",
-    color: "from-amber-500/20 to-yellow-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400",
+    color: "from-amber-500/10 to-yellow-500/5 dark:from-amber-500/20 dark:to-yellow-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400",
     desc: "Unearths underrated masterpieces & indie classics."
   },
   {
     name: "Lex",
     role: "Consensus Host",
     avatar: "🟢",
-    color: "from-emerald-500/20 to-teal-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400",
+    color: "from-emerald-500/10 to-teal-500/5 dark:from-emerald-500/20 dark:to-teal-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400",
     desc: "Synthesizes all agent opinions into the final verdict."
   }
 ];
@@ -231,31 +231,31 @@ export default function RequestForm() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-blue-500 selection:text-white transition-colors duration-300 relative overflow-hidden" suppressHydrationWarning>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col selection:bg-blue-500 selection:text-white transition-colors duration-300 relative overflow-hidden" suppressHydrationWarning>
       {/* Background ambient radial glows */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[500px] bg-gradient-to-b from-blue-600/15 via-indigo-600/5 to-transparent blur-3xl pointer-events-none -z-10" />
-      <div className="absolute top-96 right-0 w-[400px] h-[400px] bg-purple-600/10 blur-3xl pointer-events-none -z-10" />
-      <div className="absolute bottom-10 left-0 w-[400px] h-[400px] bg-blue-600/10 blur-3xl pointer-events-none -z-10" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[500px] bg-gradient-to-b from-blue-500/10 via-indigo-500/5 to-transparent dark:from-blue-600/15 dark:via-indigo-600/5 blur-3xl pointer-events-none -z-10" />
+      <div className="absolute top-96 right-0 w-[400px] h-[400px] bg-purple-500/10 dark:bg-purple-600/10 blur-3xl pointer-events-none -z-10" />
+      <div className="absolute bottom-10 left-0 w-[400px] h-[400px] bg-blue-500/10 dark:bg-blue-600/10 blur-3xl pointer-events-none -z-10" />
 
       {/* Header bar */}
-      <header className="w-full border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl sticky top-0 z-50">
+      <header className="w-full border-b border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl sticky top-0 z-50 transition-colors">
         <div className="max-w-6xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 text-lg">
               🐝
             </div>
             <div className="flex flex-col">
-              <span className="text-xl font-black tracking-tight bg-gradient-to-r from-white via-blue-200 to-indigo-400 bg-clip-text text-transparent">
+              <span className="text-xl font-black tracking-tight bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-white dark:via-blue-200 dark:to-indigo-400 bg-clip-text text-transparent">
                 CineSwarm
               </span>
-              <span className="text-[10px] font-bold text-blue-400/80 uppercase tracking-widest -mt-1">
+              <span className="text-[10px] font-bold text-blue-600/80 dark:text-blue-400/80 uppercase tracking-widest -mt-1">
                 AI Debate Discovery
               </span>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <span className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse"></span>
               Swarm Agents Active
             </span>
             <ThemeToggle />
@@ -265,19 +265,19 @@ export default function RequestForm() {
 
       {/* Hero Section */}
       <section className="pt-12 pb-8 px-4 text-center max-w-4xl mx-auto space-y-6">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-wider backdrop-blur-sm animate-fade-in">
-          <Zap className="w-3.5 h-3.5 text-blue-400" />
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
+          <Zap className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
           <span>Next-Gen AI Agent Swarm for Movies & Web Series</span>
         </div>
 
-        <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-none text-white">
+        <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-none text-slate-900 dark:text-white">
           Don&apos;t Spend 30 Minutes Scrolling. <br className="hidden sm:inline" />
-          <span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-300 dark:to-purple-400 bg-clip-text text-transparent">
             Let AI Agents Debate What You Watch.
           </span>
         </h1>
 
-        <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
+        <p className="text-slate-600 dark:text-slate-400 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
           Four specialized AI agents clash live in real-time to review craft, atmosphere, and hidden potential — delivering your ultimate match with direct India streaming links.
         </p>
 
@@ -286,15 +286,15 @@ export default function RequestForm() {
           {SWARM_AGENTS.map((agent, i) => (
             <div 
               key={i} 
-              className={`p-3.5 rounded-2xl bg-gradient-to-b ${agent.color} border backdrop-blur-md text-left transition-all hover:scale-[1.02] cursor-default`}
+              className={`p-3.5 rounded-2xl bg-gradient-to-b ${agent.color} border border-slate-200 dark:border-slate-800 backdrop-blur-md text-left transition-all hover:scale-[1.02] cursor-default bg-white/70 dark:bg-slate-900/70`}
             >
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xl">{agent.avatar}</span>
                 <span className="text-[10px] font-black uppercase tracking-wider opacity-70">AGENT</span>
               </div>
-              <h3 className="font-bold text-sm text-white">{agent.name}</h3>
+              <h3 className="font-bold text-sm text-slate-800 dark:text-white">{agent.name}</h3>
               <p className="text-[11px] font-semibold opacity-90 mb-1">{agent.role}</p>
-              <p className="text-[10px] text-slate-400 leading-tight">{agent.desc}</p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">{agent.desc}</p>
             </div>
           ))}
         </div>
@@ -302,17 +302,17 @@ export default function RequestForm() {
 
       {/* Main Form container */}
       <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 max-w-4xl mx-auto w-full">
-        <Card className="w-full shadow-2xl border border-slate-800 bg-slate-900/90 backdrop-blur-xl rounded-3xl overflow-hidden">
-          <CardHeader className="text-center pb-6 border-b border-slate-800/80 bg-slate-950/40">
+        <Card className="w-full shadow-2xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl overflow-hidden transition-all">
+          <CardHeader className="text-center pb-6 border-b border-slate-150 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/40">
             {/* Mode selection tabs */}
-            <div className="flex bg-slate-950/80 p-1.5 rounded-2xl border border-slate-800/80 max-w-md mx-auto">
+            <div className="flex bg-slate-100 dark:bg-slate-950/80 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800/80 max-w-md mx-auto">
               <button
                 type="button"
                 onClick={() => setMode("mood")}
                 className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   mode === "mood"
                     ? "bg-blue-600 text-white shadow-lg shadow-blue-500/25"
-                    : "text-slate-400 hover:text-slate-200"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5" />
@@ -324,7 +324,7 @@ export default function RequestForm() {
                 className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   mode === "search"
                     ? "bg-blue-600 text-white shadow-lg shadow-blue-500/25"
-                    : "text-slate-400 hover:text-slate-200"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
                 }`}
               >
                 <Search className="w-3.5 h-3.5" />
@@ -333,7 +333,7 @@ export default function RequestForm() {
               <button
                 type="button"
                 onClick={handleSurpriseMe}
-                className="flex-1 py-2 rounded-xl text-xs font-bold text-amber-400 hover:bg-amber-500/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                className="flex-1 py-2 rounded-xl text-xs font-bold text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 🎲 Surprise Me
               </button>
@@ -344,8 +344,8 @@ export default function RequestForm() {
             <form onSubmit={handleSubmit} className="space-y-8">
               {/* Content Type Selector */}
               <div className="space-y-3">
-                <Label className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                  <Film className="w-4 h-4 text-blue-400" />
+                <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                  <Film className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   Select Content Type
                 </Label>
                 <div className="grid grid-cols-3 gap-2.5">
@@ -354,8 +354,8 @@ export default function RequestForm() {
                     onClick={() => setMediaType("all")}
                     className={`py-2.5 px-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer flex items-center justify-center gap-2 ${
                       mediaType === "all"
-                        ? "bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/20"
-                        : "bg-slate-950/60 hover:bg-slate-800/60 text-slate-400 border-slate-800"
+                        ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20"
+                        : "bg-slate-100 dark:bg-slate-950/60 hover:bg-slate-200 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800"
                     }`}
                   >
                     🍿 All (Movies & Series)
@@ -365,8 +365,8 @@ export default function RequestForm() {
                     onClick={() => setMediaType("movie")}
                     className={`py-2.5 px-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer flex items-center justify-center gap-2 ${
                       mediaType === "movie"
-                        ? "bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/20"
-                        : "bg-slate-950/60 hover:bg-slate-800/60 text-slate-400 border-slate-800"
+                        ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20"
+                        : "bg-slate-100 dark:bg-slate-950/60 hover:bg-slate-200 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800"
                     }`}
                   >
                     🎬 Movies Only
@@ -376,8 +376,8 @@ export default function RequestForm() {
                     onClick={() => setMediaType("tv")}
                     className={`py-2.5 px-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer flex items-center justify-center gap-2 ${
                       mediaType === "tv"
-                        ? "bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/20"
-                        : "bg-slate-950/60 hover:bg-slate-800/60 text-slate-400 border-slate-800"
+                        ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20"
+                        : "bg-slate-100 dark:bg-slate-950/60 hover:bg-slate-200 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800"
                     }`}
                   >
                     📺 TV Shows Only
@@ -389,8 +389,8 @@ export default function RequestForm() {
                 <>
                   {/* Mood input & Fast Vibes */}
                   <div className="space-y-3">
-                    <Label htmlFor="mood" className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-purple-400" />
+                    <Label htmlFor="mood" className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                       How are you feeling right now?
                     </Label>
                     <Input
@@ -398,20 +398,20 @@ export default function RequestForm() {
                       placeholder={mediaType === "tv" ? "e.g. A thrilling sci-fi series with mystery like Stranger Things..." : "e.g. A mind-bending thriller with incredible visuals..."}
                       value={mood}
                       onChange={(e) => setMood(e.target.value)}
-                      className="h-14 text-base bg-slate-950/80 border-slate-800 text-white placeholder:text-slate-500 focus-visible:ring-blue-500 rounded-2xl px-4"
+                      className="h-14 text-base bg-slate-50 dark:bg-slate-950/80 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:ring-blue-500 rounded-2xl px-4"
                       required
                     />
                     
                     {/* Fast Vibe presets */}
                     <div className="space-y-2 pt-1">
-                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Fast Vibe Presets:</span>
+                      <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Fast Vibe Presets:</span>
                       <div className="flex flex-wrap gap-2">
                         {FAST_VIBES.map((vibe) => (
                           <button
                             key={vibe}
                             type="button"
                             onClick={() => setMood(vibe.replace(/^[^\s]+\s/, ''))}
-                            className="text-xs font-semibold bg-slate-950/80 hover:bg-slate-800 hover:border-blue-500/50 text-slate-300 px-3 py-1.5 rounded-xl transition-all cursor-pointer border border-slate-800 flex items-center gap-1"
+                            className="text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-950/80 dark:hover:bg-slate-800 dark:hover:border-blue-500/50 text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-xl transition-all cursor-pointer border border-slate-200 dark:border-slate-800 flex items-center gap-1"
                           >
                             {vibe}
                           </button>
@@ -422,8 +422,8 @@ export default function RequestForm() {
 
                   {/* Preferred Streaming Platforms Filter */}
                   <div className="space-y-3">
-                    <Label className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                      <Tv className="w-4 h-4 text-indigo-400" />
+                    <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                      <Tv className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                       Filter Streaming Platforms (India Region)
                     </Label>
                     <div className="flex flex-wrap gap-2">
@@ -434,8 +434,8 @@ export default function RequestForm() {
                           onClick={() => setSelectedPlatform(provider.id)}
                           className={`rounded-xl px-4 py-2 text-xs font-bold transition-all cursor-pointer border ${
                             selectedPlatform === provider.id
-                              ? "bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-500/20"
-                              : "bg-slate-950/60 hover:bg-slate-800/60 text-slate-400 border-slate-800"
+                              ? "bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-500/20"
+                              : "bg-slate-100 dark:bg-slate-950/60 hover:bg-slate-200 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800"
                           }`}
                         >
                           {provider.name}
@@ -446,7 +446,7 @@ export default function RequestForm() {
 
                   {/* Genres list selector */}
                   <div className="space-y-3">
-                    <Label className="text-sm font-bold text-slate-300 uppercase tracking-wider">Preferred Genres</Label>
+                    <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Preferred Genres</Label>
                     <div className="flex flex-wrap gap-2">
                       {GENRES.map(genre => (
                         <Button
@@ -455,8 +455,8 @@ export default function RequestForm() {
                           variant={selectedGenres.includes(genre) ? "default" : "outline"}
                           className={`rounded-xl px-4 py-2 text-xs font-bold transition-all duration-200 border ${
                             selectedGenres.includes(genre) 
-                              ? "bg-blue-600 text-white border-blue-500 shadow-sm" 
-                              : "bg-slate-950/60 hover:bg-slate-800/60 text-slate-400 border-slate-800"
+                              ? "bg-blue-600 text-white border-blue-600 shadow-sm" 
+                              : "bg-slate-100 dark:bg-slate-950/60 hover:bg-slate-200 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800"
                           }`}
                           onClick={() => toggleGenre(genre)}
                         >
@@ -469,8 +469,8 @@ export default function RequestForm() {
               ) : (
                 /* Direct Search input */
                 <div className="space-y-3">
-                  <Label htmlFor="searchTitle" className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                    <Search className="w-4 h-4 text-blue-400" />
+                  <Label htmlFor="searchTitle" className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                    <Search className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                     Enter Movie or TV Show Title
                   </Label>
                   <Input
@@ -478,7 +478,7 @@ export default function RequestForm() {
                     placeholder={mediaType === "tv" ? "e.g. Stranger Things, Breaking Bad, The Office..." : "e.g. Inception, The Matrix, Interstellar..."}
                     value={searchTitle}
                     onChange={(e) => setSearchTitle(e.target.value)}
-                    className="h-14 text-base bg-slate-950/80 border-slate-800 text-white placeholder:text-slate-500 focus-visible:ring-blue-500 rounded-2xl px-4"
+                    className="h-14 text-base bg-slate-50 dark:bg-slate-950/80 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:ring-blue-500 rounded-2xl px-4"
                     required
                   />
                 </div>
@@ -486,7 +486,7 @@ export default function RequestForm() {
 
               <Button 
                 type="submit" 
-                className="w-full h-14 text-base font-black bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-2xl transition-all shadow-xl shadow-blue-600/25 cursor-pointer flex items-center justify-center gap-2" 
+                className="w-full h-14 text-base font-black bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-2xl transition-all shadow-xl shadow-blue-500/25 cursor-pointer flex items-center justify-center gap-2" 
                 disabled={loading || (mode === "mood" ? !mood : !searchTitle)}
               >
                 {loading ? (
@@ -510,11 +510,11 @@ export default function RequestForm() {
         {/* Popular Swarm Debates Quick Picks */}
         <div className="w-full mt-14 space-y-5">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-              <Flame className="w-4 h-4 text-amber-400 animate-pulse" />
+            <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              <Flame className="w-4 h-4 text-amber-500 dark:text-amber-400 animate-pulse" />
               <span>Trending AI Swarm Debates</span>
             </h3>
-            <span className="text-xs text-slate-500 font-medium">Click any to jump into debate</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">Click any to jump into debate</span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
@@ -523,18 +523,18 @@ export default function RequestForm() {
                 key={idx}
                 type="button"
                 onClick={() => handleQuickPick(item.title, item.type)}
-                className="p-4 bg-slate-900/80 border border-slate-800 rounded-2xl hover:border-blue-500 hover:bg-slate-800/80 transition-all text-left group cursor-pointer shadow-lg hover:shadow-blue-500/10 transform hover:-translate-y-1 relative overflow-hidden"
+                className="p-4 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-slate-800/80 transition-all text-left group cursor-pointer shadow-md hover:shadow-blue-500/10 transform hover:-translate-y-1 relative overflow-hidden"
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-2xl">{item.emoji}</span>
-                  <span className="text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-full uppercase">
+                  <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-full uppercase">
                     {item.type === "tv" ? "TV Series" : "Movie"}
                   </span>
                 </div>
-                <div className="text-sm font-black text-white truncate group-hover:text-blue-400 transition-colors">
+                <div className="text-sm font-black text-slate-800 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                   {item.title}
                 </div>
-                <div className="text-[11px] font-medium text-slate-400 mt-0.5">
+                <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
                   {item.desc}
                 </div>
               </button>
@@ -545,8 +545,8 @@ export default function RequestForm() {
         {/* Saved Watchlist Section */}
         {favorites.length > 0 && (
           <div className="w-full mt-14 space-y-5">
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-              <Star className="w-4 h-4 text-amber-400" />
+            <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              <Star className="w-4 h-4 text-amber-500 dark:text-amber-400" />
               <span>Your Saved Watchlist</span>
             </h3>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
@@ -554,7 +554,7 @@ export default function RequestForm() {
                 <button
                   key={fav.tmdb_id}
                   onClick={() => handleFavoriteClick(fav.title)}
-                  className="group relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 aspect-[2/3] hover:border-blue-500 transition-all cursor-pointer text-left shadow-lg transform hover:-translate-y-1"
+                  className="group relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 aspect-[2/3] hover:border-blue-500 transition-all cursor-pointer text-left shadow-lg transform hover:-translate-y-1"
                 >
                   {fav.poster_path ? (
                     <Image
@@ -564,7 +564,7 @@ export default function RequestForm() {
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center p-3 text-center text-xs font-bold text-slate-400 bg-slate-950">
+                    <div className="w-full h-full flex items-center justify-center p-3 text-center text-xs font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-950">
                       {fav.title}
                     </div>
                   )}
@@ -580,14 +580,14 @@ export default function RequestForm() {
       </main>
 
       {/* Footer */}
-      <footer className="w-full border-t border-slate-800/80 bg-slate-950 py-8 text-center text-xs text-slate-500 mt-16">
+      <footer className="w-full border-t border-slate-200 dark:border-slate-800/80 bg-slate-100 dark:bg-slate-950 py-8 text-center text-xs text-slate-500 dark:text-slate-500 mt-16 transition-colors">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span>🐝</span>
-            <span className="font-bold text-slate-300">CineSwarm</span>
+            <span className="font-bold text-slate-700 dark:text-slate-300">CineSwarm</span>
             <span>— AI Multi-Agent Entertainment Swarm</span>
           </div>
-          <div className="flex items-center gap-4 text-slate-400">
+          <div className="flex items-center gap-4 text-slate-500 dark:text-slate-400">
             <span>Free Tier Optimized (Render • Vercel • Supabase)</span>
           </div>
         </div>
