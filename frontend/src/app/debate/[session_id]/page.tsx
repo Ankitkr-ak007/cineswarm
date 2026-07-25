@@ -202,7 +202,7 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
     };
 
     return () => {
-      if (ws.readyState === WebSocket.OPEN) {
+      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
         ws.close();
       }
     };
