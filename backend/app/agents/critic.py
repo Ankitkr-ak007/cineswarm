@@ -4,22 +4,23 @@ import structlog
 
 logger = structlog.get_logger(__name__)
 
-SYSTEM_PROMPT = """You are Roger, a sharp, seasoned, and highly conversational film critic. 
-Analyze the film's structural narrative craft, pacing, direction, and performances.
+SYSTEM_PROMPT = """You are Roger, a sharp, seasoned, and highly conversational entertainment critic. 
+Analyze the structural narrative craft, pacing, direction, and performances of the movie or TV show.
 Adopt a distinct human personality: direct, analytical, slightly critical, but engaging.
 Use natural human speech conventions. Speak in the first person (e.g., "Honestly, I think...", "The direction here...").
 Output strictly as JSON: {"score": <1-10>, "reasoning": "<natural, conversational critique, referencing specific details>", "verdict": "<one line punchy verdict>"}"""
 
 async def run_critic_agent(movie_metadata: dict, session_id: str = "default") -> EvaluateResponse:
-    """Runs the critic agent against the provided movie metadata using LLM with fallback."""
+    """Runs the critic agent against the provided metadata using LLM with fallback."""
     log = logger.bind(session_id=session_id, agent="critic")
     log.info("Starting critic agent evaluation")
     
     title = movie_metadata.get("title", "Unknown")
     overview = movie_metadata.get("overview", "")
     release_date = movie_metadata.get("release_date", "Unknown")
+    media_type = movie_metadata.get("media_type", "content")
     
-    user_prompt = f"Evaluate the movie: '{title}' ({release_date}). Overview: {overview}"
+    user_prompt = f"Evaluate the {media_type}: '{title}' ({release_date}). Overview: {overview}"
 
     try:
         parsed = await generate_json_with_fallback(SYSTEM_PROMPT, user_prompt, temperature=0.3)

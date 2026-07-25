@@ -11,6 +11,7 @@ class EvaluateResponse(BaseModel):
 class RecommendRequest(BaseModel):
     mood: str = Field(..., description="The current mood of the user.")
     genres: list[str] = Field(default_factory=list, description="Preferred genres.")
+    media_type: str = Field(default="all", description="Media type: 'all', 'movie', or 'tv'")
 
 class RecommendResponse(BaseModel):
     session_id: str = Field(..., description="A unique identifier for the recommendation session.")
@@ -32,7 +33,8 @@ class FeedbackResponse(BaseModel):
     success: bool
 
 class TitleRecommendRequest(BaseModel):
-    title: str = Field(..., description="The exact title of the movie to search for.")
+    title: str = Field(..., description="The exact title of the movie or TV show to search for.")
+    media_type: str = Field(default="all", description="Media type: 'all', 'movie', or 'tv'")
 
 class FavoriteRequest(BaseModel):
     movie_id: int

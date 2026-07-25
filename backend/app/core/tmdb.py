@@ -19,8 +19,8 @@ class MovieNotFoundError(Exception):
     wait=wait_exponential(multiplier=1, min=2, max=10),
     retry=retry_if_exception_type((httpx.RequestError, TMDBError))
 )
-async def fetch_movie_metadata(title: str) -> dict:
-    """Fetch movie metadata from TMDB by title. Takes the top match."""
+async def fetch_movie_metadata(title: str, media_type: str = "all") -> dict:
+    """Fetch movie or TV show metadata from TMDB by title."""
     # Check cache first
     supabase = get_supabase_client()
     if supabase:
@@ -47,8 +47,11 @@ async def fetch_movie_metadata(title: str) -> dict:
                         "vote_average": genres_data.get("vote_average") if isinstance(genres_data, dict) and "vote_average" in genres_data else (movie.get("vote_average") or 0.0),
                         "vote_count": genres_data.get("vote_count") if isinstance(genres_data, dict) and "vote_count" in genres_data else (movie.get("vote_count") or 0),
                         "popularity": genres_data.get("popularity") if isinstance(genres_data, dict) and "popularity" in genres_data else (movie.get("popularity") or 0.0),
+                        "media_type": genres_data.get("media_type", "movie"),
+                        "number_of_seasons": genres_data.get("number_of_seasons"),
+                        "number_of_episodes": genres_data.get("number_of_episodes"),
                     }
-                    logger.info("Found cached movie in database by title", title=title, id=metadata["id"])
+                    logger.info("Found cached content in database by title", title=title, id=metadata["id"])
                     return metadata
         except Exception as e:
             logger.warning("Failed to check movies cache by title", error=str(e))
@@ -56,26 +59,26 @@ async def fetch_movie_metadata(title: str) -> dict:
     if not settings.TMDB_API_KEY:
         raise ValueError("TMDB_API_KEY is not set")
     
-    url = "https://api.themoviedb.org/3/search/movie"
-    params: dict[str, str | int] = {
-        "api_key": settings.TMDB_API_KEY,
-        "query": title,
-        "include_adult": "false",
-        "language": "en-US",
-        "page": 1
-    }
-    headers = {
-        "accept": "application/json"
-    }
-
+    headers = {"accept": "application/json"}
+    
     async with httpx.AsyncClient() as client:
+        search_endpoint = "search/multi" if media_type == "all" else f"search/{media_type}"
+        url = f"https://api.themoviedb.org/3/{search_endpoint}"
+        params: dict[str, str | int] = {
+            "api_key": settings.TMDB_API_KEY,
+            "query": title,
+            "include_adult": "false",
+            "language": "en-US",
+            "page": 1
+        }
+
         try:
             response = await client.get(url, params=params, headers=headers, timeout=10.0)
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
             if e.response.status_code >= 500:
                 raise TMDBError(f"TMDB Server Error: {e.response.status_code}")
-            elif e.response.status_code == 401 or e.response.status_code == 403:
+            elif e.response.status_code in (401, 403):
                 raise ValueError("Invalid TMDB API Key")
             else:
                 raise TMDBError(f"HTTP Error: {e.response.status_code}")
@@ -83,41 +86,70 @@ async def fetch_movie_metadata(title: str) -> dict:
             raise TMDBError(f"Request Error: {str(e)}")
 
         data = response.json()
-        if not data.get("results"):
-            raise MovieNotFoundError(f"Movie '{title}' not found.")
-            
-        movie_id = data["results"][0]["id"]
+        results = data.get("results", [])
+        valid_results = [r for r in results if r.get("media_type") in ("movie", "tv") or "title" in r or "name" in r]
         
-        # Now fetch details with release_dates to get certification
-        details_url = f"https://api.themoviedb.org/3/movie/{movie_id}"
+        if not valid_results and media_type != "movie":
+            # Fallback search via movie endpoint if multi/tv returns nothing
+            fb_url = "https://api.themoviedb.org/3/search/movie"
+            fb_resp = await client.get(fb_url, params=params, headers=headers, timeout=10.0)
+            if fb_resp.status_code == 200 and fb_resp.json().get("results"):
+                valid_results = fb_resp.json()["results"]
+
+        if not valid_results:
+            raise MovieNotFoundError(f"Content '{title}' not found.")
+            
+        top_match = valid_results[0]
+        item_id = top_match["id"]
+        detected_type = top_match.get("media_type") or ("tv" if ("first_air_date" in top_match or media_type == "tv") else "movie")
+        
+        if detected_type == "tv":
+            details_url = f"https://api.themoviedb.org/3/tv/{item_id}"
+            append_target = "content_ratings,credits,videos,watch/providers,similar"
+        else:
+            details_url = f"https://api.themoviedb.org/3/movie/{item_id}"
+            append_target = "release_dates,credits,videos,watch/providers,similar"
+            
         details_params = {
             "api_key": settings.TMDB_API_KEY,
-            "append_to_response": "release_dates,credits,videos,watch/providers,similar",
+            "append_to_response": append_target,
             "language": "en-US"
         }
         
         try:
             details_resp = await client.get(details_url, params=details_params, headers=headers, timeout=10.0)
             details_resp.raise_for_status()
+            details_data = details_resp.json()
         except httpx.HTTPError:
-            # Fallback to just the search result if details fail
-            return data["results"][0]
-            
-        details_data = details_resp.json()
+            details_data = top_match
+
+        # Normalize title, release date, certification & media_type
+        normalized_title = details_data.get("title") or details_data.get("name") or details_data.get("original_name") or title
+        normalized_date = details_data.get("release_date") or details_data.get("first_air_date")
         
-        # Extract US certification
         certification = None
-        release_dates = details_data.get("release_dates", {}).get("results", [])
-        for rd in release_dates:
-            if rd.get("iso_3166_1") == "US":
-                for release in rd.get("release_dates", []):
-                    if release.get("certification"):
-                        certification = release.get("certification")
+        if detected_type == "tv":
+            ratings = details_data.get("content_ratings", {}).get("results", [])
+            for r in ratings:
+                if r.get("iso_3166_1") in ("US", "IN"):
+                    if r.get("rating"):
+                        certification = r.get("rating")
                         break
-                if certification:
-                    break
-                    
+        else:
+            release_dates = details_data.get("release_dates", {}).get("results", [])
+            for rd in release_dates:
+                if rd.get("iso_3166_1") == "US":
+                    for release in rd.get("release_dates", []):
+                        if release.get("certification"):
+                            certification = release.get("certification")
+                            break
+                    if certification:
+                        break
+
+        details_data["title"] = normalized_title
+        details_data["release_date"] = normalized_date
         details_data["certification"] = certification
+        details_data["media_type"] = detected_type
 
         # Store in database cache
         if supabase:
@@ -132,20 +164,23 @@ async def fetch_movie_metadata(title: str) -> dict:
                     "backdrop_path": details_data.get("backdrop_path"),
                     "vote_average": details_data.get("vote_average"),
                     "vote_count": details_data.get("vote_count"),
-                    "popularity": details_data.get("popularity")
+                    "popularity": details_data.get("popularity"),
+                    "media_type": detected_type,
+                    "number_of_seasons": details_data.get("number_of_seasons"),
+                    "number_of_episodes": details_data.get("number_of_episodes"),
                 }
                 supabase.table("movies").upsert({
                     "tmdb_id": details_data.get("id"),
-                    "title": details_data.get("title"),
+                    "title": normalized_title,
                     "overview": details_data.get("overview"),
                     "genres": genres_cache,
-                    "release_date": details_data.get("release_date"),
-                    "certification": details_data.get("certification"),
-                    "adult": details_data.get("adult"),
+                    "release_date": normalized_date,
+                    "certification": certification,
+                    "adult": details_data.get("adult", False),
                     "poster_path": details_data.get("poster_path")
                 }).execute()
             except Exception as cache_err:
-                logger.warning("Failed to save movie to database cache", error=str(cache_err))
+                logger.warning("Failed to save content to database cache", error=str(cache_err))
 
         return details_data
 
@@ -299,15 +334,29 @@ def extract_watch_providers(movie_metadata: dict, region: str = "IN") -> list[di
 
 def extract_similar_movies(movie_metadata: dict) -> list[dict]:
     similar = movie_metadata.get("similar", {}).get("results", [])[:6]
-    return [{"id": m.get("id"), "title": m.get("title"), "poster_path": m.get("poster_path")} for m in similar if isinstance(m, dict)]
+    return [
+        {
+            "id": m.get("id"),
+            "title": m.get("title") or m.get("name") or m.get("original_name"),
+            "poster_path": m.get("poster_path")
+        }
+        for m in similar if isinstance(m, dict)
+    ]
 
-async def suggest_movies_from_llm(mood: str, genres: list[str], content_mode: str) -> list[str]:
-    """Ask LLM to suggest 5 movie titles that fit the mood and genres."""
+async def suggest_movies_from_llm(mood: str, genres: list[str], content_mode: str, media_type: str = "all") -> list[str]:
+    """Ask LLM to suggest 5 movie or TV show titles that fit the mood and genres."""
     from app.core.llm import generate_json_with_fallback
     
     genres_str = ", ".join(genres)
-    system_prompt = "You are a movie recommendation assistant. Suggest 5 real, popular movies matching the user's request. Output strictly as JSON: {\"titles\": [\"Movie 1\", \"Movie 2\", \"Movie 3\", \"Movie 4\", \"Movie 5\"]}"
-    user_prompt = f"Mood/Vibe: {mood}\nGenres: {genres_str}\nContent Mode: {content_mode} (if 'kids', only suggest family-friendly movies rating G/PG)"
+    if media_type == "tv":
+        type_str = "TV shows/series"
+    elif media_type == "movie":
+        type_str = "movies"
+    else:
+        type_str = "movies or TV shows"
+        
+    system_prompt = f'You are an entertainment recommendation assistant. Suggest 5 real, popular {type_str} matching the user\'s request. Output strictly as JSON: {{"titles": ["Title 1", "Title 2", "Title 3", "Title 4", "Title 5"]}}'
+    user_prompt = f"Mood/Vibe: {mood}\nGenres: {genres_str}\nContent Mode: {content_mode} (if 'kids', only suggest family-friendly content)\nMedia Type Preference: {media_type}"
     
     try:
         parsed = await generate_json_with_fallback(system_prompt, user_prompt, temperature=0.7)
@@ -316,8 +365,9 @@ async def suggest_movies_from_llm(mood: str, genres: list[str], content_mode: st
         elif isinstance(parsed, list):
             return [str(t) for t in parsed]
     except Exception as e:
-        logger.warning("LLM movie recommendation failed, using defaults", error=str(e))
+        logger.warning("LLM recommendation failed, using defaults", error=str(e))
     
-    # Fallback list if LLM fails
+    if media_type == "tv":
+        return ["Stranger Things", "Breaking Bad", "The Office", "Game of Thrones"]
     return ["Toy Story", "Inception", "Finding Nemo", "Inside Out"]
 

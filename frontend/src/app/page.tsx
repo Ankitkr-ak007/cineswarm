@@ -23,6 +23,7 @@ interface SavedMovie {
 export default function RequestForm() {
   const router = useRouter();
   const [mode, setMode] = useState<"mood" | "search">("mood");
+  const [mediaType, setMediaType] = useState<"all" | "movie" | "tv">("all");
   const [mood, setMood] = useState("");
   const [searchTitle, setSearchTitle] = useState("");
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
@@ -58,7 +59,8 @@ export default function RequestForm() {
         const { data, error } = await apiClient.POST("/api/v1/recommend", {
           body: {
             mood,
-            genres: selectedGenres
+            genres: selectedGenres,
+            media_type: mediaType
           }
         });
         
@@ -75,13 +77,14 @@ export default function RequestForm() {
       } else {
         const { data, error } = await apiClient.POST("/api/v1/recommend/title", {
           body: {
-            title: searchTitle
+            title: searchTitle,
+            media_type: mediaType
           }
         });
         
         if (error) {
           console.error("API error", error);
-          alert("Failed to search movie title");
+          alert("Failed to search title");
           setLoading(false);
           return;
         }
@@ -100,11 +103,11 @@ export default function RequestForm() {
     setLoading(true);
     try {
       const { data, error } = await apiClient.POST("/api/v1/recommend/title", {
-        body: { title }
+        body: { title, media_type: mediaType }
       });
       if (error) {
         console.error("API error starting favorite debate", error);
-        alert("Failed to start debate for favorited movie");
+        alert("Failed to start debate for favorited item");
         setLoading(false);
         return;
       }
@@ -139,7 +142,7 @@ export default function RequestForm() {
             </div>
             <CardTitle className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">CineSwarm</CardTitle>
             <CardDescription className="text-slate-500 dark:text-slate-400 text-base md:text-lg mt-1.5">
-              AI Agents Debate What You Should Watch
+              AI Agents Debate What You Should Watch (Movies & TV Shows)
             </CardDescription>
 
             {/* Mode selection tabs */}
@@ -171,6 +174,46 @@ export default function RequestForm() {
           
           <CardContent className="pt-8">
             <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Content Type Selector */}
+              <div className="space-y-3">
+                <Label className="text-base font-bold text-slate-700 dark:text-slate-300">Content Type</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setMediaType("all")}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                      mediaType === "all"
+                        ? "bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:border-blue-500 shadow-sm"
+                        : "bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700/60 dark:hover:bg-slate-700/60"
+                    }`}
+                  >
+                    🍿 All (Movies & TV)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMediaType("movie")}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                      mediaType === "movie"
+                        ? "bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:border-blue-500 shadow-sm"
+                        : "bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700/60 dark:hover:bg-slate-700/60"
+                    }`}
+                  >
+                    🎬 Movies Only
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMediaType("tv")}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                      mediaType === "tv"
+                        ? "bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:border-blue-500 shadow-sm"
+                        : "bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700/60 dark:hover:bg-slate-700/60"
+                    }`}
+                  >
+                    📺 TV Shows Only
+                  </button>
+                </div>
+              </div>
+
               {mode === "mood" ? (
                 <>
                   {/* Mood input */}
@@ -178,7 +221,7 @@ export default function RequestForm() {
                     <Label htmlFor="mood" className="text-base font-bold text-slate-700 dark:text-slate-300">How are you feeling?</Label>
                     <Input
                       id="mood"
-                      placeholder="e.g. I want something mind-bending but not too dark..."
+                      placeholder={mediaType === "tv" ? "e.g. A thrilling sci-fi series like Stranger Things..." : "e.g. Something mind-bending but not too dark..."}
                       value={mood}
                       onChange={(e) => setMood(e.target.value)}
                       className="h-12 text-base bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white focus-visible:ring-blue-500 rounded-xl"
@@ -211,10 +254,10 @@ export default function RequestForm() {
               ) : (
                 /* Search input */
                 <div className="space-y-3">
-                  <Label htmlFor="searchTitle" className="text-base font-bold text-slate-700 dark:text-slate-300">Enter Movie Title</Label>
+                  <Label htmlFor="searchTitle" className="text-base font-bold text-slate-700 dark:text-slate-300">Enter Title</Label>
                   <Input
                     id="searchTitle"
-                    placeholder="e.g. Inception, The Matrix, Finding Nemo..."
+                    placeholder={mediaType === "tv" ? "e.g. Stranger Things, Breaking Bad, The Office..." : "e.g. Inception, The Matrix, Finding Nemo..."}
                     value={searchTitle}
                     onChange={(e) => setSearchTitle(e.target.value)}
                     className="h-12 text-base bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white focus-visible:ring-blue-500 rounded-xl"
@@ -225,7 +268,7 @@ export default function RequestForm() {
 
               <Button 
                 type="submit" 
-                className="w-full h-12 text-base font-bold bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600 rounded-xl transition-all shadow-md" 
+                className="w-full h-12 text-base font-bold bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600 rounded-xl transition-all shadow-md cursor-pointer" 
                 disabled={loading || (mode === "mood" ? !mood : !searchTitle)}
               >
                 {loading ? (
@@ -235,7 +278,7 @@ export default function RequestForm() {
                     <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce"></span>
                     Initializing Swarm...
                   </span>
-                ) : mode === "mood" ? "Find Me a Movie" : "Start Movie Debate"}
+                ) : mode === "mood" ? (mediaType === "tv" ? "Find Me a Show" : mediaType === "movie" ? "Find Me a Movie" : "Find What to Watch") : "Start Swarm Debate"}
               </Button>
             </form>
           </CardContent>

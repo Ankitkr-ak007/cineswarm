@@ -32,6 +32,9 @@ interface MovieMetadata {
   poster_path?: string | null;
   backdrop_path?: string | null;
   release_date?: string;
+  media_type?: string;
+  number_of_seasons?: number;
+  number_of_episodes?: number;
   cast?: string[];
   trailer_key?: string | null;
   watch_providers?: { name: string; logo_path: string | null; link?: string | null }[];
@@ -265,7 +268,9 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
             <div className="flex-1 space-y-4 pt-2">
               <div>
                 <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full">Now Debating</span>
+                  <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full">
+                    {movieMetadata.media_type === "tv" ? "📺 TV Show" : "🎬 Movie"} • Now Debating
+                  </span>
                   <button
                     onClick={handleSaveFavorite}
                     disabled={isSaved || saving}
@@ -280,11 +285,20 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
                   </button>
                 </div>
                 <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight mt-2.5">{movieMetadata.title}</h2>
-                {movieMetadata.release_date && (
-                  <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-1">
-                    Released: {new Date(movieMetadata.release_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                  </p>
-                )}
+                <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-slate-500 dark:text-slate-400 mt-1">
+                  {movieMetadata.release_date && (
+                    <span>
+                      {movieMetadata.media_type === "tv" ? "First Aired: " : "Released: "}
+                      {new Date(movieMetadata.release_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </span>
+                  )}
+                  {movieMetadata.number_of_seasons && (
+                    <span className="bg-blue-500/10 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-md text-[11px] font-bold border border-blue-500/20">
+                      {movieMetadata.number_of_seasons} Season{movieMetadata.number_of_seasons > 1 ? "s" : ""}
+                      {movieMetadata.number_of_episodes ? ` (${movieMetadata.number_of_episodes} Episodes)` : ""}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Cast Chips (Task 4) */}
