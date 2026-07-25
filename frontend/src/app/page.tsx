@@ -8,20 +8,20 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/api-client";
-import { Film, Search, Sparkles } from "lucide-react";
+import { Film, Search, Sparkles, Tv, Flame, Star, Zap, ShieldCheck, Play, ArrowRight } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const GENRES = ["Action", "Comedy", "Drama", "Sci-Fi", "Horror", "Romance", "Animation", "Family"];
 
 const POPULAR_QUICK_PICKS = [
-  { title: "Stranger Things", type: "tv", emoji: "📺" },
-  { title: "Inception", type: "movie", emoji: "🎬" },
-  { title: "Breaking Bad", type: "tv", emoji: "📺" },
-  { title: "The Dark Knight", type: "movie", emoji: "🎬" },
-  { title: "Interstellar", type: "movie", emoji: "🎬" },
-  { title: "The Office", type: "tv", emoji: "📺" },
-  { title: "Dune: Part Two", type: "movie", emoji: "🎬" },
-  { title: "Squid Game", type: "tv", emoji: "📺" },
+  { title: "Stranger Things", type: "tv", emoji: "📺", desc: "Sci-Fi Thriller" },
+  { title: "Inception", type: "movie", emoji: "🎬", desc: "Mind-Bending Action" },
+  { title: "Breaking Bad", type: "tv", emoji: "📺", desc: "Crime Drama" },
+  { title: "The Dark Knight", type: "movie", emoji: "🎬", desc: "Superhero Masterpiece" },
+  { title: "Interstellar", type: "movie", emoji: "🎬", desc: "Sci-Fi Odyssey" },
+  { title: "The Office", type: "tv", emoji: "📺", desc: "Comfort Comedy" },
+  { title: "Dune: Part Two", type: "movie", emoji: "🎬", desc: "Epic Sci-Fi" },
+  { title: "Squid Game", type: "tv", emoji: "📺", desc: "Survival Mystery" },
 ];
 
 const STREAMING_PROVIDERS = [
@@ -40,6 +40,37 @@ const FAST_VIBES = [
   "😂 Feel-Good Comedy",
   "🎨 Visually Stunning",
   "🧠 Intellectual Thriller"
+];
+
+const SWARM_AGENTS = [
+  {
+    name: "Roger",
+    role: "Film & Narrative Critic",
+    avatar: "🎬",
+    color: "from-rose-500/20 to-red-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400",
+    desc: "Analyzes structural craft, pacing, and performances."
+  },
+  {
+    name: "Aura",
+    role: "Atmosphere & Vibe Architect",
+    avatar: "🔮",
+    color: "from-purple-500/20 to-indigo-500/10 border-purple-500/30 text-purple-600 dark:text-purple-400",
+    desc: "Matches your exact emotional mood and aesthetic."
+  },
+  {
+    name: "Pixel",
+    role: "Hidden Gem Scout",
+    avatar: "💎",
+    color: "from-amber-500/20 to-yellow-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400",
+    desc: "Unearths underrated masterpieces & indie classics."
+  },
+  {
+    name: "Lex",
+    role: "Consensus Host",
+    avatar: "🟢",
+    color: "from-emerald-500/20 to-teal-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400",
+    desc: "Synthesizes all agent opinions into the final verdict."
+  }
 ];
 
 interface SavedMovie {
@@ -88,6 +119,33 @@ export default function RequestForm() {
       });
       if (error) {
         alert("Failed to start debate for quick pick");
+        setLoading(false);
+        return;
+      }
+      if (data?.session_id) {
+        router.push(`/debate/${data.session_id}`);
+      }
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
+    }
+  };
+
+  const handleSurpriseMe = async () => {
+    setLoading(true);
+    const surpriseMoods = [
+      "Mind-bending sci-fi masterpiece with unforgettable plot twists",
+      "High-octane action thriller that keeps you on the edge of your seat",
+      "Cozy feel-good comedy perfect for a relaxed weekend binge",
+      "Dark atmospheric mystery series with deep character development"
+    ];
+    const randomMood = surpriseMoods[Math.floor(Math.random() * surpriseMoods.length)];
+    try {
+      const { data, error } = await apiClient.POST("/api/v1/recommend", {
+        body: { mood: randomMood, genres: [], media_type: mediaType }
+      });
+      if (error) {
+        alert("Failed to generate surprise pick");
         setLoading(false);
         return;
       }
@@ -173,81 +231,142 @@ export default function RequestForm() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col transition-colors duration-300" suppressHydrationWarning>
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-blue-500 selection:text-white transition-colors duration-300 relative overflow-hidden" suppressHydrationWarning>
+      {/* Background ambient radial glows */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[500px] bg-gradient-to-b from-blue-600/15 via-indigo-600/5 to-transparent blur-3xl pointer-events-none -z-10" />
+      <div className="absolute top-96 right-0 w-[400px] h-[400px] bg-purple-600/10 blur-3xl pointer-events-none -z-10" />
+      <div className="absolute bottom-10 left-0 w-[400px] h-[400px] bg-blue-600/10 blur-3xl pointer-events-none -z-10" />
+
       {/* Header bar */}
-      <header className="w-full border-b border-slate-200 dark:border-slate-850 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-5xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🐝</span>
-            <span className="text-xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent tracking-tight">CineSwarm</span>
+      <header className="w-full border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 text-lg">
+              🐝
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xl font-black tracking-tight bg-gradient-to-r from-white via-blue-200 to-indigo-400 bg-clip-text text-transparent">
+                CineSwarm
+              </span>
+              <span className="text-[10px] font-bold text-blue-400/80 uppercase tracking-widest -mt-1">
+                AI Debate Discovery
+              </span>
+            </div>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-3">
+            <span className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              Swarm Agents Active
+            </span>
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
-      {/* Main Request Form container */}
-      <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 max-w-5xl mx-auto w-full">
-        <Card className="w-full max-w-2xl shadow-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 backdrop-blur-sm transition-all duration-300">
-          <CardHeader className="text-center pb-6 border-b border-slate-150 dark:border-slate-850">
-            <div className="mx-auto bg-blue-100 dark:bg-blue-950/50 w-16 h-16 rounded-full flex items-center justify-center mb-4 border border-blue-200 dark:border-blue-800/30">
-              <Film className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-            </div>
-            <CardTitle className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">CineSwarm</CardTitle>
-            <CardDescription className="text-slate-500 dark:text-slate-400 text-base md:text-lg mt-1.5">
-              AI Agents Debate What You Should Watch (Movies & TV Shows)
-            </CardDescription>
+      {/* Hero Section */}
+      <section className="pt-12 pb-8 px-4 text-center max-w-4xl mx-auto space-y-6">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-wider backdrop-blur-sm animate-fade-in">
+          <Zap className="w-3.5 h-3.5 text-blue-400" />
+          <span>Next-Gen AI Agent Swarm for Movies & Web Series</span>
+        </div>
 
+        <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-none text-white">
+          Don&apos;t Spend 30 Minutes Scrolling. <br className="hidden sm:inline" />
+          <span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">
+            Let AI Agents Debate What You Watch.
+          </span>
+        </h1>
+
+        <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
+          Four specialized AI agents clash live in real-time to review craft, atmosphere, and hidden potential — delivering your ultimate match with direct India streaming links.
+        </p>
+
+        {/* AI Swarm Agent Squad Showcase */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 max-w-4xl mx-auto">
+          {SWARM_AGENTS.map((agent, i) => (
+            <div 
+              key={i} 
+              className={`p-3.5 rounded-2xl bg-gradient-to-b ${agent.color} border backdrop-blur-md text-left transition-all hover:scale-[1.02] cursor-default`}
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xl">{agent.avatar}</span>
+                <span className="text-[10px] font-black uppercase tracking-wider opacity-70">AGENT</span>
+              </div>
+              <h3 className="font-bold text-sm text-white">{agent.name}</h3>
+              <p className="text-[11px] font-semibold opacity-90 mb-1">{agent.role}</p>
+              <p className="text-[10px] text-slate-400 leading-tight">{agent.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Main Form container */}
+      <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 max-w-4xl mx-auto w-full">
+        <Card className="w-full shadow-2xl border border-slate-800 bg-slate-900/90 backdrop-blur-xl rounded-3xl overflow-hidden">
+          <CardHeader className="text-center pb-6 border-b border-slate-800/80 bg-slate-950/40">
             {/* Mode selection tabs */}
-            <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1.5 rounded-xl mt-6 border border-slate-200 dark:border-slate-700/50 max-w-xs mx-auto">
+            <div className="flex bg-slate-950/80 p-1.5 rounded-2xl border border-slate-800/80 max-w-md mx-auto">
               <button
+                type="button"
                 onClick={() => setMode("mood")}
-                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   mode === "mood"
-                    ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-white shadow-sm"
-                    : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                    ? "bg-blue-600 text-white shadow-lg shadow-blue-500/25"
+                    : "text-slate-400 hover:text-slate-200"
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                Mood Discover
+                Mood AI Discover
               </button>
               <button
+                type="button"
                 onClick={() => setMode("search")}
-                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   mode === "search"
-                    ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-white shadow-sm"
-                    : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                    ? "bg-blue-600 text-white shadow-lg shadow-blue-500/25"
+                    : "text-slate-400 hover:text-slate-200"
                 }`}
               >
                 <Search className="w-3.5 h-3.5" />
-                Direct Search
+                Direct Title Search
+              </button>
+              <button
+                type="button"
+                onClick={handleSurpriseMe}
+                className="flex-1 py-2 rounded-xl text-xs font-bold text-amber-400 hover:bg-amber-500/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                🎲 Surprise Me
               </button>
             </div>
           </CardHeader>
           
-          <CardContent className="pt-8">
+          <CardContent className="p-6 md:p-8">
             <form onSubmit={handleSubmit} className="space-y-8">
               {/* Content Type Selector */}
               <div className="space-y-3">
-                <Label className="text-base font-bold text-slate-700 dark:text-slate-300">Content Type</Label>
-                <div className="grid grid-cols-3 gap-2">
+                <Label className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                  <Film className="w-4 h-4 text-blue-400" />
+                  Select Content Type
+                </Label>
+                <div className="grid grid-cols-3 gap-2.5">
                   <button
                     type="button"
                     onClick={() => setMediaType("all")}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                    className={`py-2.5 px-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer flex items-center justify-center gap-2 ${
                       mediaType === "all"
-                        ? "bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:border-blue-500 shadow-sm"
-                        : "bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700/60 dark:hover:bg-slate-700/60"
+                        ? "bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/20"
+                        : "bg-slate-950/60 hover:bg-slate-800/60 text-slate-400 border-slate-800"
                     }`}
                   >
-                    🍿 All (Movies & TV)
+                    🍿 All (Movies & Series)
                   </button>
                   <button
                     type="button"
                     onClick={() => setMediaType("movie")}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                    className={`py-2.5 px-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer flex items-center justify-center gap-2 ${
                       mediaType === "movie"
-                        ? "bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:border-blue-500 shadow-sm"
-                        : "bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700/60 dark:hover:bg-slate-700/60"
+                        ? "bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/20"
+                        : "bg-slate-950/60 hover:bg-slate-800/60 text-slate-400 border-slate-800"
                     }`}
                   >
                     🎬 Movies Only
@@ -255,10 +374,10 @@ export default function RequestForm() {
                   <button
                     type="button"
                     onClick={() => setMediaType("tv")}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                    className={`py-2.5 px-3 rounded-2xl text-xs font-bold transition-all border cursor-pointer flex items-center justify-center gap-2 ${
                       mediaType === "tv"
-                        ? "bg-blue-600 text-white border-blue-600 dark:bg-blue-500 dark:border-blue-500 shadow-sm"
-                        : "bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700/60 dark:hover:bg-slate-700/60"
+                        ? "bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/20"
+                        : "bg-slate-950/60 hover:bg-slate-800/60 text-slate-400 border-slate-800"
                     }`}
                   >
                     📺 TV Shows Only
@@ -270,44 +389,53 @@ export default function RequestForm() {
                 <>
                   {/* Mood input & Fast Vibes */}
                   <div className="space-y-3">
-                    <Label htmlFor="mood" className="text-base font-bold text-slate-700 dark:text-slate-300">How are you feeling?</Label>
+                    <Label htmlFor="mood" className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-purple-400" />
+                      How are you feeling right now?
+                    </Label>
                     <Input
                       id="mood"
-                      placeholder={mediaType === "tv" ? "e.g. A thrilling sci-fi series like Stranger Things..." : "e.g. Something mind-bending but not too dark..."}
+                      placeholder={mediaType === "tv" ? "e.g. A thrilling sci-fi series with mystery like Stranger Things..." : "e.g. A mind-bending thriller with incredible visuals..."}
                       value={mood}
                       onChange={(e) => setMood(e.target.value)}
-                      className="h-12 text-base bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white focus-visible:ring-blue-500 rounded-xl"
+                      className="h-14 text-base bg-slate-950/80 border-slate-800 text-white placeholder:text-slate-500 focus-visible:ring-blue-500 rounded-2xl px-4"
                       required
                     />
                     
                     {/* Fast Vibe presets */}
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {FAST_VIBES.map((vibe) => (
-                        <button
-                          key={vibe}
-                          type="button"
-                          onClick={() => setMood(vibe.replace(/^[^\s]+\s/, ''))}
-                          className="text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-lg transition-colors cursor-pointer border border-slate-200/60 dark:border-slate-700/50"
-                        >
-                          {vibe}
-                        </button>
-                      ))}
+                    <div className="space-y-2 pt-1">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Fast Vibe Presets:</span>
+                      <div className="flex flex-wrap gap-2">
+                        {FAST_VIBES.map((vibe) => (
+                          <button
+                            key={vibe}
+                            type="button"
+                            onClick={() => setMood(vibe.replace(/^[^\s]+\s/, ''))}
+                            className="text-xs font-semibold bg-slate-950/80 hover:bg-slate-800 hover:border-blue-500/50 text-slate-300 px-3 py-1.5 rounded-xl transition-all cursor-pointer border border-slate-800 flex items-center gap-1"
+                          >
+                            {vibe}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
                   {/* Preferred Streaming Platforms Filter */}
                   <div className="space-y-3">
-                    <Label className="text-base font-bold text-slate-700 dark:text-slate-300">Preferred Streaming Platform</Label>
+                    <Label className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                      <Tv className="w-4 h-4 text-indigo-400" />
+                      Filter Streaming Platforms (India Region)
+                    </Label>
                     <div className="flex flex-wrap gap-2">
                       {STREAMING_PROVIDERS.map((provider) => (
                         <button
                           key={provider.id}
                           type="button"
                           onClick={() => setSelectedPlatform(provider.id)}
-                          className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                          className={`rounded-xl px-4 py-2 text-xs font-bold transition-all cursor-pointer border ${
                             selectedPlatform === provider.id
-                              ? "bg-indigo-600 text-white dark:bg-indigo-500 shadow-sm"
-                              : "bg-slate-100 hover:bg-slate-200 text-slate-600 border-0 dark:bg-slate-800/60 dark:text-slate-300 dark:hover:bg-slate-700/60"
+                              ? "bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-500/20"
+                              : "bg-slate-950/60 hover:bg-slate-800/60 text-slate-400 border-slate-800"
                           }`}
                         >
                           {provider.name}
@@ -318,17 +446,17 @@ export default function RequestForm() {
 
                   {/* Genres list selector */}
                   <div className="space-y-3">
-                    <Label className="text-base font-bold text-slate-700 dark:text-slate-300">Preferred Genres</Label>
+                    <Label className="text-sm font-bold text-slate-300 uppercase tracking-wider">Preferred Genres</Label>
                     <div className="flex flex-wrap gap-2">
                       {GENRES.map(genre => (
                         <Button
                           key={genre}
                           type="button"
                           variant={selectedGenres.includes(genre) ? "default" : "outline"}
-                          className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-all duration-200 ${
+                          className={`rounded-xl px-4 py-2 text-xs font-bold transition-all duration-200 border ${
                             selectedGenres.includes(genre) 
-                              ? "bg-blue-600 text-white dark:bg-blue-500" 
-                              : "bg-slate-100 hover:bg-slate-200 text-slate-600 border-0 dark:bg-slate-800/60 dark:text-slate-300 dark:hover:bg-slate-700/60"
+                              ? "bg-blue-600 text-white border-blue-500 shadow-sm" 
+                              : "bg-slate-950/60 hover:bg-slate-800/60 text-slate-400 border-slate-800"
                           }`}
                           onClick={() => toggleGenre(genre)}
                         >
@@ -339,15 +467,18 @@ export default function RequestForm() {
                   </div>
                 </>
               ) : (
-                /* Search input */
+                /* Direct Search input */
                 <div className="space-y-3">
-                  <Label htmlFor="searchTitle" className="text-base font-bold text-slate-700 dark:text-slate-300">Enter Title</Label>
+                  <Label htmlFor="searchTitle" className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                    <Search className="w-4 h-4 text-blue-400" />
+                    Enter Movie or TV Show Title
+                  </Label>
                   <Input
                     id="searchTitle"
-                    placeholder={mediaType === "tv" ? "e.g. Stranger Things, Breaking Bad, The Office..." : "e.g. Inception, The Matrix, Finding Nemo..."}
+                    placeholder={mediaType === "tv" ? "e.g. Stranger Things, Breaking Bad, The Office..." : "e.g. Inception, The Matrix, Interstellar..."}
                     value={searchTitle}
                     onChange={(e) => setSearchTitle(e.target.value)}
-                    className="h-12 text-base bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white focus-visible:ring-blue-500 rounded-xl"
+                    className="h-14 text-base bg-slate-950/80 border-slate-800 text-white placeholder:text-slate-500 focus-visible:ring-blue-500 rounded-2xl px-4"
                     required
                   />
                 </div>
@@ -355,41 +486,56 @@ export default function RequestForm() {
 
               <Button 
                 type="submit" 
-                className="w-full h-12 text-base font-bold bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-500 dark:hover:bg-blue-600 rounded-xl transition-all shadow-md cursor-pointer" 
+                className="w-full h-14 text-base font-black bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-2xl transition-all shadow-xl shadow-blue-600/25 cursor-pointer flex items-center justify-center gap-2" 
                 disabled={loading || (mode === "mood" ? !mood : !searchTitle)}
               >
                 {loading ? (
                   <span className="flex items-center gap-2 justify-center">
-                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce"></span>
-                    Initializing Swarm...
+                    <span className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                    <span className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                    <span className="w-2 h-2 bg-white rounded-full animate-bounce"></span>
+                    Initializing AI Swarm Debate...
                   </span>
-                ) : mode === "mood" ? (mediaType === "tv" ? "Find Me a Show" : mediaType === "movie" ? "Find Me a Movie" : "Find What to Watch") : "Start Swarm Debate"}
+                ) : (
+                  <>
+                    <span>Launch AI Swarm Debate</span>
+                    <ArrowRight className="w-5 h-5" />
+                  </>
+                )}
               </Button>
             </form>
           </CardContent>
         </Card>
 
         {/* Popular Swarm Debates Quick Picks */}
-        <div className="w-full max-w-2xl mt-10 space-y-4">
-          <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1 flex items-center gap-2">
-            <span>🔥</span> Popular Swarm Debates
-          </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="w-full mt-14 space-y-5">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              <Flame className="w-4 h-4 text-amber-400 animate-pulse" />
+              <span>Trending AI Swarm Debates</span>
+            </h3>
+            <span className="text-xs text-slate-500 font-medium">Click any to jump into debate</span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
             {POPULAR_QUICK_PICKS.map((item, idx) => (
               <button
                 key={idx}
                 type="button"
                 onClick={() => handleQuickPick(item.title, item.type)}
-                className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-all text-left group cursor-pointer shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
+                className="p-4 bg-slate-900/80 border border-slate-800 rounded-2xl hover:border-blue-500 hover:bg-slate-800/80 transition-all text-left group cursor-pointer shadow-lg hover:shadow-blue-500/10 transform hover:-translate-y-1 relative overflow-hidden"
               >
-                <div className="text-lg mb-1">{item.emoji}</div>
-                <div className="text-xs font-black text-slate-800 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-2xl">{item.emoji}</span>
+                  <span className="text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-full uppercase">
+                    {item.type === "tv" ? "TV Series" : "Movie"}
+                  </span>
+                </div>
+                <div className="text-sm font-black text-white truncate group-hover:text-blue-400 transition-colors">
                   {item.title}
                 </div>
-                <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 capitalize">
-                  {item.type === "tv" ? "TV Series" : "Movie"}
+                <div className="text-[11px] font-medium text-slate-400 mt-0.5">
+                  {item.desc}
                 </div>
               </button>
             ))}
@@ -398,49 +544,54 @@ export default function RequestForm() {
 
         {/* Saved Watchlist Section */}
         {favorites.length > 0 && (
-          <div className="w-full max-w-2xl mt-12 space-y-4">
-            <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1">⭐ Your Saved Watchlist</h3>
+          <div className="w-full mt-14 space-y-5">
+            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              <Star className="w-4 h-4 text-amber-400" />
+              <span>Your Saved Watchlist</span>
+            </h3>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
               {favorites.map((fav) => (
-                <div 
+                <button
                   key={fav.tmdb_id}
-                  role="button"
-                  tabIndex={0}
                   onClick={() => handleFavoriteClick(fav.title)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      handleFavoriteClick(fav.title);
-                    }
-                  }}
-                  aria-label={`Start debate for saved movie: ${fav.title}`}
-                  className="group cursor-pointer bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 p-2.5 rounded-2xl hover:border-slate-350 dark:hover:border-slate-700/50 hover:bg-slate-100/50 dark:hover:bg-slate-800/40 transition-all duration-300 transform hover:-translate-y-1 shadow-sm focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none"
+                  className="group relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 aspect-[2/3] hover:border-blue-500 transition-all cursor-pointer text-left shadow-lg transform hover:-translate-y-1"
                 >
-                  <div className="aspect-[2/3] w-full rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 relative shadow-md">
-                    {fav.poster_path ? (
-                      <Image 
-                        src={`https://image.tmdb.org/t/p/w185${fav.poster_path}`}
-                        alt={fav.title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 33vw, 150px"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-900 text-xs">
-                        <span>🎬</span>
-                        <span className="text-[10px] mt-1 font-bold">No Image</span>
-                      </div>
-                    )}
+                  {fav.poster_path ? (
+                    <Image
+                      src={`https://image.tmdb.org/t/p/w300${fav.poster_path}`}
+                      alt={fav.title}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center p-3 text-center text-xs font-bold text-slate-400 bg-slate-950">
+                      {fav.title}
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-end">
+                    <span className="text-xs font-black text-white truncate">{fav.title}</span>
+                    <span className="text-[10px] font-bold text-blue-400">Re-Run Debate →</span>
                   </div>
-                  <p className="text-xs font-black text-slate-700 dark:text-slate-300 truncate text-center mt-2 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors">
-                    {fav.title}
-                  </p>
-                </div>
+                </button>
               ))}
             </div>
           </div>
         )}
       </main>
+
+      {/* Footer */}
+      <footer className="w-full border-t border-slate-800/80 bg-slate-950 py-8 text-center text-xs text-slate-500 mt-16">
+        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <span>🐝</span>
+            <span className="font-bold text-slate-300">CineSwarm</span>
+            <span>— AI Multi-Agent Entertainment Swarm</span>
+          </div>
+          <div className="flex items-center gap-4 text-slate-400">
+            <span>Free Tier Optimized (Render • Vercel • Supabase)</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
