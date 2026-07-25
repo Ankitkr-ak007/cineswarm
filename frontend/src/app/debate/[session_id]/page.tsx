@@ -94,8 +94,8 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
     setMovieMetadata(null);
     
     try {
-      const { data, error: apiErr } = await apiClient.POST("/api/v1/recommend", {
-        body: { mood: `Recommend similar movie: ${title}`, genres: [] }
+      const { data, error: apiErr } = await apiClient.POST("/api/v1/recommend/title", {
+        body: { title }
       });
       if (apiErr) {
         alert("Failed to submit request");
@@ -468,7 +468,7 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
               <Card className="border border-slate-200 dark:border-slate-800/80 bg-white/95 dark:bg-slate-900/60 backdrop-blur-md rounded-2xl shadow-lg">
                 <CardContent className="p-4 space-y-4">
                   <h3 className="font-black text-sm text-slate-800 dark:text-white uppercase tracking-widest flex items-center gap-2">
-                    <span>🚀</span> Streaming Options (US)
+                    <span>🚀</span> Streaming Options (India)
                   </h3>
                   {movieMetadata.watch_providers.length > 0 ? (
                     <div className="flex flex-wrap gap-3">
@@ -490,7 +490,7 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-slate-500 italic">No flatrate streaming provider found in US region.</p>
+                    <p className="text-xs text-slate-500 italic">No flatrate streaming provider found in India region.</p>
                   )}
                 </CardContent>
               </Card>

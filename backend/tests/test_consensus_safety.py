@@ -2,20 +2,17 @@ from app.agents.consensus import calculate_consensus_score
 from app.core.safety import is_safe_for_kids
 
 def test_calculate_consensus_score():
-    # Equal weights, all agents succeed
+    # All agents succeed
     scores = {"critic": 8.0, "vibes": 9.0, "hidden_gems": 7.0, "data": 8.0}
-    weights = {"critic": 0.25, "vibes": 0.25, "hidden_gems": 0.25, "data": 0.25}
-    assert calculate_consensus_score(scores, weights) == 8.0
+    assert calculate_consensus_score(scores) == 8.0
     
     # Missing agents (e.g. Vibes failed)
     scores = {"critic": 8.0, "vibes": None, "hidden_gems": 7.0, "data": 9.0}
-    # Weighted calculation should ignore 'vibes' entirely and divide by 0.75
-    # (8*0.25 + 7*0.25 + 9*0.25) / 0.75 = 8.0
-    assert calculate_consensus_score(scores, weights) == 8.0
+    assert calculate_consensus_score(scores) == 8.0
     
     # All agents failed
     scores = {"critic": None, "vibes": None, "hidden_gems": None, "data": None}
-    assert calculate_consensus_score(scores, weights) == 0.0
+    assert calculate_consensus_score(scores) == 0.0
     
 def test_kids_mode_safety():
     # Safe movie (G rating, no horror, no bad keywords)

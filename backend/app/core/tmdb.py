@@ -253,8 +253,8 @@ def extract_trailer_key(movie_metadata: dict) -> str | None:
             return v.get("key")
     return None
 
-def extract_watch_providers(movie_metadata: dict) -> list[dict]:
-    providers = movie_metadata.get("watch/providers", {}).get("results", {}).get("US", {}).get("flatrate", [])
+def extract_watch_providers(movie_metadata: dict, region: str = "IN") -> list[dict]:
+    providers = movie_metadata.get("watch/providers", {}).get("results", {}).get(region, {}).get("flatrate", [])
     return [{"name": p.get("provider_name"), "logo_path": p.get("logo_path")} for p in providers if isinstance(p, dict)]
 
 def extract_similar_movies(movie_metadata: dict) -> list[dict]:
