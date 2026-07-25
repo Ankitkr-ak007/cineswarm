@@ -137,12 +137,21 @@ export default function RequestForm() {
       "Mind-bending sci-fi masterpiece with unforgettable plot twists",
       "High-octane action thriller that keeps you on the edge of your seat",
       "Cozy feel-good comedy perfect for a relaxed weekend binge",
-      "Dark atmospheric mystery series with deep character development"
+      "Dark atmospheric mystery series with deep character development",
+      "Epic fantasy adventure with rich world building and stunning visuals",
+      "Gripping psychological thriller with intense suspense and unexpected turns",
+      "Charming romantic comedy with witty dialogue and great chemistry",
+      "Intense crime drama with complex characters and high stakes",
+      "Heartwarming animated film suitable for all ages",
+      "Underground cult classic hidden gem that deserves more recognition",
+      "Thought-provoking philosophical movie that stays with you long after",
+      "Fast-paced heist movie with slick plan and clever twists"
     ];
     const randomMood = surpriseMoods[Math.floor(Math.random() * surpriseMoods.length)];
+    const uniqueMood = `${randomMood} (random seed ${Math.random().toString(36).substring(7)})`;
     try {
       const { data, error } = await apiClient.POST("/api/v1/recommend", {
-        body: { mood: randomMood, genres: [], media_type: mediaType }
+        body: { mood: uniqueMood, genres: [], media_type: mediaType }
       });
       if (error) {
         alert("Failed to generate surprise pick");

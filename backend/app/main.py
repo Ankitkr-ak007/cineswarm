@@ -14,6 +14,7 @@ from app.core.tmdb import fetch_movie_metadata, suggest_movies_from_llm
 from app.api.ws import router as ws_router, session_states
 from app.db.supabase import get_supabase_client
 import uuid
+import random
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -54,6 +55,7 @@ async def recommend_movie(request: Request, body: RecommendRequest):
     
     try:
         candidate_titles = await suggest_movies_from_llm(body.mood, body.genres, "general", media_type=body.media_type)
+        random.shuffle(candidate_titles)
         
         movie_metadata = None
         for title in candidate_titles:
@@ -66,7 +68,8 @@ async def recommend_movie(request: Request, body: RecommendRequest):
                 
         if not movie_metadata:
             # Fallback if no dynamically suggested title works
-            fallback_titles = ["Stranger Things", "Breaking Bad", "Toy Story", "Inception"] if body.media_type == "tv" else ["Toy Story", "Finding Nemo", "Inception", "Inside Out"]
+            fallback_titles = ["Stranger Things", "Breaking Bad", "The Office", "Game of Thrones", "Chernobyl", "The Crown"] if body.media_type == "tv" else ["Toy Story", "Finding Nemo", "Inception", "Inside Out", "Interstellar", "The Dark Knight", "Coco", "Whiplash"]
+            random.shuffle(fallback_titles)
             for title in fallback_titles:
                 try:
                     meta = await fetch_movie_metadata(title, media_type=body.media_type)
