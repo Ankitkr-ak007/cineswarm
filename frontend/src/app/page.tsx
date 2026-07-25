@@ -13,6 +13,35 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 
 const GENRES = ["Action", "Comedy", "Drama", "Sci-Fi", "Horror", "Romance", "Animation", "Family"];
 
+const POPULAR_QUICK_PICKS = [
+  { title: "Stranger Things", type: "tv", emoji: "📺" },
+  { title: "Inception", type: "movie", emoji: "🎬" },
+  { title: "Breaking Bad", type: "tv", emoji: "📺" },
+  { title: "The Dark Knight", type: "movie", emoji: "🎬" },
+  { title: "Interstellar", type: "movie", emoji: "🎬" },
+  { title: "The Office", type: "tv", emoji: "📺" },
+  { title: "Dune: Part Two", type: "movie", emoji: "🎬" },
+  { title: "Squid Game", type: "tv", emoji: "📺" },
+];
+
+const STREAMING_PROVIDERS = [
+  { name: "All Platforms", id: "all" },
+  { name: "Netflix", id: "netflix" },
+  { name: "Prime Video", id: "prime" },
+  { name: "Disney+ Hotstar", id: "hotstar" },
+  { name: "JioCinema", id: "jiocinema" },
+  { name: "Apple TV+", id: "apple" },
+];
+
+const FAST_VIBES = [
+  "🤯 Mind-Bending",
+  "🍿 Popcorn Binge",
+  "😱 Dark & Suspenseful",
+  "😂 Feel-Good Comedy",
+  "🎨 Visually Stunning",
+  "🧠 Intellectual Thriller"
+];
+
 interface SavedMovie {
   tmdb_id: number;
   title: string;
@@ -24,6 +53,7 @@ export default function RequestForm() {
   const router = useRouter();
   const [mode, setMode] = useState<"mood" | "search">("mood");
   const [mediaType, setMediaType] = useState<"all" | "movie" | "tv">("all");
+  const [selectedPlatform, setSelectedPlatform] = useState<string>("all");
   const [mood, setMood] = useState("");
   const [searchTitle, setSearchTitle] = useState("");
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
@@ -50,15 +80,37 @@ export default function RequestForm() {
     );
   };
 
+  const handleQuickPick = async (title: string, type: string) => {
+    setLoading(true);
+    try {
+      const { data, error } = await apiClient.POST("/api/v1/recommend/title", {
+        body: { title, media_type: type }
+      });
+      if (error) {
+        alert("Failed to start debate for quick pick");
+        setLoading(false);
+        return;
+      }
+      if (data?.session_id) {
+        router.push(`/debate/${data.session_id}`);
+      }
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
       if (mode === "mood") {
+        const platformSuffix = selectedPlatform !== "all" ? ` (available on ${selectedPlatform})` : "";
+        const finalMood = `${mood}${platformSuffix}`;
         const { data, error } = await apiClient.POST("/api/v1/recommend", {
           body: {
-            mood,
+            mood: finalMood,
             genres: selectedGenres,
             media_type: mediaType
           }
@@ -216,7 +268,7 @@ export default function RequestForm() {
 
               {mode === "mood" ? (
                 <>
-                  {/* Mood input */}
+                  {/* Mood input & Fast Vibes */}
                   <div className="space-y-3">
                     <Label htmlFor="mood" className="text-base font-bold text-slate-700 dark:text-slate-300">How are you feeling?</Label>
                     <Input
@@ -227,6 +279,41 @@ export default function RequestForm() {
                       className="h-12 text-base bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white focus-visible:ring-blue-500 rounded-xl"
                       required
                     />
+                    
+                    {/* Fast Vibe presets */}
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {FAST_VIBES.map((vibe) => (
+                        <button
+                          key={vibe}
+                          type="button"
+                          onClick={() => setMood(vibe.replace(/^[^\s]+\s/, ''))}
+                          className="text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-lg transition-colors cursor-pointer border border-slate-200/60 dark:border-slate-700/50"
+                        >
+                          {vibe}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Preferred Streaming Platforms Filter */}
+                  <div className="space-y-3">
+                    <Label className="text-base font-bold text-slate-700 dark:text-slate-300">Preferred Streaming Platform</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {STREAMING_PROVIDERS.map((provider) => (
+                        <button
+                          key={provider.id}
+                          type="button"
+                          onClick={() => setSelectedPlatform(provider.id)}
+                          className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer ${
+                            selectedPlatform === provider.id
+                              ? "bg-indigo-600 text-white dark:bg-indigo-500 shadow-sm"
+                              : "bg-slate-100 hover:bg-slate-200 text-slate-600 border-0 dark:bg-slate-800/60 dark:text-slate-300 dark:hover:bg-slate-700/60"
+                          }`}
+                        >
+                          {provider.name}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Genres list selector */}
@@ -283,6 +370,31 @@ export default function RequestForm() {
             </form>
           </CardContent>
         </Card>
+
+        {/* Popular Swarm Debates Quick Picks */}
+        <div className="w-full max-w-2xl mt-10 space-y-4">
+          <h3 className="text-sm font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest pl-1 flex items-center gap-2">
+            <span>🔥</span> Popular Swarm Debates
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {POPULAR_QUICK_PICKS.map((item, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleQuickPick(item.title, item.type)}
+                className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-all text-left group cursor-pointer shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
+              >
+                <div className="text-lg mb-1">{item.emoji}</div>
+                <div className="text-xs font-black text-slate-800 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  {item.title}
+                </div>
+                <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 capitalize">
+                  {item.type === "tv" ? "TV Series" : "Movie"}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Saved Watchlist Section */}
         {favorites.length > 0 && (

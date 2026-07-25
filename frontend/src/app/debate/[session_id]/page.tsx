@@ -10,7 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { apiClient } from "@/lib/api-client";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Share2, Check } from "lucide-react";
 
 interface AgentMessage {
   agent: string;
@@ -51,8 +51,20 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
   const [recommendingSimilar, setRecommendingSimilar] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const handleShareDebate = async () => {
+    const text = `🐝 CineSwarm Verdict on ${movieMetadata?.title || "Content"}: ${finalResult?.consensus_score || "N/A"}/10\n"${finalResult?.explanation || ""}"\nWatch & join debate: ${window.location.href}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    } catch (err) {
+      console.error("Clipboard copy failed", err);
+    }
+  };
 
   useEffect(() => {
     const checkFavorite = async () => {
@@ -283,6 +295,13 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
                     <span>⭐</span>
                     {isSaved ? "Saved" : "Save to Watchlist"}
                   </button>
+                  <button
+                    onClick={handleShareDebate}
+                    className="px-3 py-0.5 rounded-full text-[10px] font-bold transition-all flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer"
+                  >
+                    {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Share2 className="w-3 h-3" />}
+                    {copied ? "Copied Link!" : "Share Debate"}
+                  </button>
                 </div>
                 <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight mt-2.5">{movieMetadata.title}</h2>
                 <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-slate-500 dark:text-slate-400 mt-1">
@@ -388,9 +407,18 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
                   {finalResult && (
                     <div className="bg-emerald-500/5 dark:bg-emerald-950/20 border border-emerald-500/20 p-6 rounded-2xl space-y-5 animate-fade-in relative overflow-hidden">
                       <div className="absolute top-0 right-0 p-3 text-emerald-500/10 dark:text-emerald-500/30 text-3xl font-black select-none uppercase tracking-widest">HOST</div>
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">Debate Verdict</span>
-                        <h4 className="text-lg font-bold text-slate-800 dark:text-white mt-1">Lex (Consensus Moderator)</h4>
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1.5">
+                          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">Debate Verdict</span>
+                          <h4 className="text-lg font-bold text-slate-800 dark:text-white mt-1">Lex (Consensus Moderator)</h4>
+                        </div>
+                        <button
+                          onClick={handleShareDebate}
+                          className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-bold border border-emerald-500/20 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                        >
+                          {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Share2 className="w-3.5 h-3.5" />}
+                          {copied ? "Copied!" : "Share Verdict"}
+                        </button>
                       </div>
                       
                       <p className="text-slate-600 dark:text-slate-300 text-sm italic leading-relaxed whitespace-pre-wrap">&quot;{finalResult.explanation}&quot;</p>
