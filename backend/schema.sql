@@ -54,8 +54,11 @@ create table if not exists ratings (
 create table if not exists feedback (
   id uuid primary key,
   user_id uuid references users,
+  session_id uuid references sessions,
   movie_id int references movies,
+  feedback_type text,
   user_rating numeric,
+  comment text,
   watched boolean,
   created_at timestamptz default now()
 );

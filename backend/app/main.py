@@ -221,12 +221,23 @@ async def submit_feedback(request: Request, body: FeedbackRequest):
         raise HTTPException(status_code=500, detail="Database not configured")
         
     try:
-        supabase.table("feedback").insert({
+        data = {
             "id": str(uuid.uuid4()),
             "session_id": body.session_id,
             "feedback_type": body.feedback_type,
-            "comment": body.comment
-        }).execute()
+        }
+        if body.comment:
+            data["comment"] = body.comment
+
+        try:
+            supabase.table("feedback").insert(data).execute()
+        except Exception as e:
+            if "comment" in data and "comment" in str(e):
+                data.pop("comment", None)
+                supabase.table("feedback").insert(data).execute()
+            else:
+                raise e
+
         return FeedbackResponse(success=True)
     except Exception:
         log.exception("Error submitting feedback")
