@@ -38,6 +38,7 @@ const STREAMING_PROVIDERS = [
   { name: "Prime Video", id: "prime" },
   { name: "Disney+ Hotstar", id: "hotstar" },
   { name: "JioCinema", id: "jiocinema" },
+  { name: "YouTube", id: "youtube" },
   { name: "Apple TV+", id: "apple" },
 ];
 

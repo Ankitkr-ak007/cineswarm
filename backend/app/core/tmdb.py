@@ -294,7 +294,9 @@ def _build_provider_link(provider_name: str, movie_title: str, tmdb_link: str | 
     name_lower = provider_name.lower()
     query = quote_plus(movie_title)
     
-    if "netflix" in name_lower:
+    if "youtube" in name_lower or "google" in name_lower:
+        return f"https://www.youtube.com/results?search_query=watch+{query}+full+movie+official"
+    elif "netflix" in name_lower:
         return f"https://www.netflix.com/search?q={query}"
     elif "prime" in name_lower or "amazon" in name_lower:
         return f"https://www.primevideo.com/search/ref=atv_nb_sr?phrase={query}"
@@ -306,8 +308,6 @@ def _build_provider_link(provider_name: str, movie_title: str, tmdb_link: str | 
         return f"https://www.zee5.com/search?q={query}"
     elif "apple" in name_lower:
         return f"https://tv.apple.com/search?term={query}"
-    elif "youtube" in name_lower or "google" in name_lower:
-        return f"https://www.youtube.com/results?search_query={query}+movie"
     elif tmdb_link:
         return tmdb_link
     else:
@@ -318,18 +318,30 @@ def extract_watch_providers(movie_metadata: dict, region: str = "IN") -> list[di
     region_data = results.get(region, {})
     tmdb_link = region_data.get("link")
     movie_title = movie_metadata.get("title", "")
-    providers = region_data.get("flatrate", [])
+    
+    # Combine flatrate (subscription), rent, buy, and free options for region
+    raw_providers = (
+        region_data.get("flatrate", []) + 
+        region_data.get("rent", []) + 
+        region_data.get("buy", []) + 
+        region_data.get("free", [])
+    )
     
     output = []
-    for p in providers:
+    seen_names = set()
+    for p in raw_providers:
         if isinstance(p, dict):
             p_name = p.get("provider_name") or "Watch Provider"
+            if p_name in seen_names:
+                continue
+            seen_names.add(p_name)
             link = _build_provider_link(p_name, movie_title, tmdb_link)
             output.append({
                 "name": p_name,
                 "logo_path": p.get("logo_path"),
                 "link": link
             })
+        
     return output
 
 def extract_similar_movies(movie_metadata: dict) -> list[dict]:
