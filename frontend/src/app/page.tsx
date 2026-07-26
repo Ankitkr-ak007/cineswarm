@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/api-client";
-import { Film, Search, Sparkles, Tv, Flame, Star, Zap, ArrowRight, Globe } from "lucide-react";
+import { Film, Search, Sparkles, Tv, Flame, Star, Zap, ArrowRight, Globe, Calendar } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const GENRES = ["Action", "Comedy", "Drama", "Sci-Fi", "Horror", "Romance", "Animation", "Family"];
