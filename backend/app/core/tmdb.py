@@ -375,8 +375,8 @@ def extract_similar_movies(movie_metadata: dict) -> list[dict]:
         for m in similar if isinstance(m, dict)
     ]
 
-async def suggest_movies_from_llm(mood: str, genres: list[str], content_mode: str, media_type: str = "all", industry: str = "all") -> list[str]:
-    """Ask LLM to suggest 5 movie or TV show titles fitting mood, genres, media type, and film industry."""
+async def suggest_movies_from_llm(mood: str, genres: list[str], content_mode: str, media_type: str = "all", industry: str = "all", year: int | str | None = None) -> list[str]:
+    """Ask LLM to suggest 5 movie or TV show titles fitting mood, genres, media type, film industry, and release year/era."""
     from app.core.llm import generate_json_with_fallback
     
     genres_str = ", ".join(genres)
@@ -397,8 +397,9 @@ async def suggest_movies_from_llm(mood: str, genres: list[str], content_mode: st
     elif industry == "anime_kdrama":
         industry_desc = "specifically from Asian cinema, K-dramas (Korean dramas), or Japanese anime"
         
+    year_desc = f"\nRelease Year / Era Preference: {year}" if year else ""
     system_prompt = f'You are an entertainment recommendation assistant. Suggest 5 real, popular {type_str} {industry_desc} matching the user\'s request. Output strictly as JSON: {{"titles": ["Title 1", "Title 2", "Title 3", "Title 4", "Title 5"]}}'
-    user_prompt = f"Mood/Vibe: {mood}\nGenres: {genres_str}\nIndustry/Region: {industry}\nContent Mode: {content_mode} (if 'kids', only suggest family-friendly content)\nMedia Type Preference: {media_type}"
+    user_prompt = f"Mood/Vibe: {mood}\nGenres: {genres_str}\nIndustry/Region: {industry}{year_desc}\nContent Mode: {content_mode} (if 'kids', only suggest family-friendly content)\nMedia Type Preference: {media_type}"
     
     try:
         parsed = await generate_json_with_fallback(system_prompt, user_prompt, temperature=0.8)
