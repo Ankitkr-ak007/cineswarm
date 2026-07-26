@@ -46,6 +46,13 @@ def read_root():
 def health_check():
     return {"status": "ok"}
 
+from app.core.vector_recommender import (
+    encode_item_vector,
+    calculate_cosine_similarity,
+    build_user_profile_vector,
+    rank_candidates_with_cosine_similarity
+)
+
 @app.post("/api/v1/recommend", response_model=RecommendResponse)
 @limiter.limit("5/minute")
 async def recommend_movie(request: Request, body: RecommendRequest):
@@ -59,22 +66,47 @@ async def recommend_movie(request: Request, body: RecommendRequest):
         
         parsed_year = int(body.year) if (body.year and str(body.year).isdigit()) else None
         
-        movie_metadata = None
+        # Fetch user interaction history from DB to build learned preference vector
+        favorites = []
+        feedback_list = []
+        supabase = get_supabase_client()
+        if supabase:
+            try:
+                fav_res = supabase.table("favorites").select("*").limit(25).execute()
+                if fav_res.data:
+                    favorites = fav_res.data
+                fb_res = supabase.table("feedback").select("*").limit(50).execute()
+                if fb_res.data:
+                    feedback_list = fb_res.data
+            except Exception as e:
+                log.warning("Could not fetch user history for vector learning", error=str(e))
+
+        user_profile_vec = build_user_profile_vector(favorites, feedback_list)
+        
+        candidate_metas = []
         for title in candidate_titles:
             try:
                 meta = await fetch_movie_metadata(title, year=parsed_year, media_type=body.media_type)
-                movie_metadata = meta
-                break
+                candidate_metas.append(meta)
             except Exception:
                 continue
                 
-        if not movie_metadata:
+        movie_metadata = None
+        if candidate_metas:
+            # Re-rank candidates using Cosine Similarity against user's learned profile vector!
+            ranked_candidates = rank_candidates_with_cosine_similarity(user_profile_vec, candidate_metas)
+            movie_metadata = ranked_candidates[0]
+        else:
             # Fallback if no dynamically suggested title works
             fallback_titles = ["Stranger Things", "Breaking Bad", "The Office", "Game of Thrones", "Chernobyl", "The Crown"] if body.media_type == "tv" else ["Toy Story", "Finding Nemo", "Inception", "Inside Out", "Interstellar", "The Dark Knight", "Coco", "Whiplash"]
             random.shuffle(fallback_titles)
             for title in fallback_titles:
                 try:
                     meta = await fetch_movie_metadata(title, year=parsed_year, media_type=body.media_type)
+                    item_vec = encode_item_vector(meta)
+                    sim_score = calculate_cosine_similarity(user_profile_vec, item_vec)
+                    meta["cosine_similarity"] = round(sim_score, 4)
+                    meta["match_percentage"] = round(min(99.9, max(68.0, sim_score * 100.0)), 1)
                     movie_metadata = meta
                     break
                 except Exception:
@@ -84,7 +116,6 @@ async def recommend_movie(request: Request, body: RecommendRequest):
             raise HTTPException(status_code=404, detail="No suitable candidate title found")
                 
         # Persist session to DB
-        supabase = get_supabase_client()
         if supabase:
             try:
                 supabase.table("sessions").insert({
@@ -122,11 +153,30 @@ async def recommend_movie_by_title(request: Request, body: TitleRecommendRequest
     try:
         movie_metadata = await fetch_movie_metadata(body.title, year=body.year, media_type=body.media_type)
         
-        # Persist session to DB
+        # Calculate Cosine Similarity match percentage for direct title search
+        favorites = []
+        feedback_list = []
         supabase = get_supabase_client()
         if supabase:
             try:
-                # Ensure the movie exists in the movies table to prevent foreign key errors in agent_runs!
+                fav_res = supabase.table("favorites").select("*").limit(25).execute()
+                if fav_res.data:
+                    favorites = fav_res.data
+                fb_res = supabase.table("feedback").select("*").limit(50).execute()
+                if fb_res.data:
+                    feedback_list = fb_res.data
+            except Exception:
+                pass
+                
+        user_profile_vec = build_user_profile_vector(favorites, feedback_list)
+        item_vec = encode_item_vector(movie_metadata)
+        sim_score = calculate_cosine_similarity(user_profile_vec, item_vec)
+        movie_metadata["cosine_similarity"] = round(sim_score, 4)
+        movie_metadata["match_percentage"] = round(min(99.9, max(68.0, sim_score * 100.0)), 1)
+        
+        # Persist session to DB
+        if supabase:
+            try:
                 supabase.table("movies").upsert({
                     "tmdb_id": movie_metadata.get("id"),
                     "title": movie_metadata.get("title"),
@@ -138,7 +188,7 @@ async def recommend_movie_by_title(request: Request, body: TitleRecommendRequest
 
                 supabase.table("sessions").insert({
                     "id": session_id,
-                    "query_context": {"mood": f"Search by title: {body.title}", "genres": [], "mode": "general"}
+                    "query_context": {"title": body.title, "media_type": body.media_type, "year": body.year, "mode": "title_search"}
                 }).execute()
             except Exception as e:
                 log.warning("Could not persist session to DB", error=str(e))
@@ -155,9 +205,34 @@ async def recommend_movie_by_title(request: Request, body: TitleRecommendRequest
         
         return RecommendResponse(session_id=session_id)
         
+    except HTTPException:
+        raise
     except Exception as e:
-        log.exception("Error initiating title recommendation")
-        raise HTTPException(status_code=500, detail="Failed to search movie and initiate debate")
+        log.exception("Error preparing title recommendation")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/ml/profile")
+async def get_ml_profile():
+    supabase = get_supabase_client()
+    fav_count = 0
+    fb_count = 0
+    if supabase:
+        try:
+            res1 = supabase.table("favorites").select("id", count="exact").execute()
+            fav_count = res1.count or len(res1.data or [])
+            res2 = supabase.table("feedback").select("id", count="exact").execute()
+            fb_count = res2.count or len(res2.data or [])
+        except Exception:
+            pass
+            
+    return {
+        "status": "active",
+        "algorithm": "Cosine Similarity Vector Space Model (TF-IDF & Weighted Feature Embedding)",
+        "vector_dimensions": 24,
+        "learned_favorites_count": fav_count,
+        "learned_feedback_count": fb_count,
+        "learning_rate": "real-time dynamic adaptation"
+    }
 
 @app.post("/api/v1/favorites", response_model=FavoriteResponse)
 @limiter.limit("10/minute")

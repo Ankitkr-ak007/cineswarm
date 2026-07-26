@@ -302,6 +302,11 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
                     {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Share2 className="w-3 h-3" />}
                     {copied ? "Copied Link!" : "Share Debate"}
                   </button>
+                  {movieMetadata.match_percentage && (
+                    <span className="px-3 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-purple-500/20 to-indigo-500/20 text-purple-600 dark:text-purple-300 border border-purple-500/30 animate-pulse">
+                      🧠 {movieMetadata.match_percentage}% ML Match (Cosine Sim)
+                    </span>
+                  )}
                 </div>
                 <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight mt-2.5">
                   {movieMetadata.title} {movieMetadata.release_date ? <span className="text-xl font-bold text-slate-400 dark:text-slate-500 font-normal">({new Date(movieMetadata.release_date).getFullYear()})</span> : null}
