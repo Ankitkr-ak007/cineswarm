@@ -54,13 +54,15 @@ async def recommend_movie(request: Request, body: RecommendRequest):
     log.info("Received recommendation request")
     
     try:
-        candidate_titles = await suggest_movies_from_llm(body.mood, body.genres, "general", media_type=body.media_type, industry=body.industry)
+        candidate_titles = await suggest_movies_from_llm(body.mood, body.genres, "general", media_type=body.media_type, industry=body.industry, year=body.year)
         random.shuffle(candidate_titles)
+        
+        parsed_year = int(body.year) if (body.year and str(body.year).isdigit()) else None
         
         movie_metadata = None
         for title in candidate_titles:
             try:
-                meta = await fetch_movie_metadata(title, media_type=body.media_type)
+                meta = await fetch_movie_metadata(title, year=parsed_year, media_type=body.media_type)
                 movie_metadata = meta
                 break
             except Exception:
@@ -72,7 +74,7 @@ async def recommend_movie(request: Request, body: RecommendRequest):
             random.shuffle(fallback_titles)
             for title in fallback_titles:
                 try:
-                    meta = await fetch_movie_metadata(title, media_type=body.media_type)
+                    meta = await fetch_movie_metadata(title, year=parsed_year, media_type=body.media_type)
                     movie_metadata = meta
                     break
                 except Exception:
@@ -87,7 +89,7 @@ async def recommend_movie(request: Request, body: RecommendRequest):
             try:
                 supabase.table("sessions").insert({
                     "id": session_id,
-                    "query_context": {"mood": body.mood, "genres": body.genres, "media_type": body.media_type, "mode": "general"}
+                    "query_context": {"mood": body.mood, "genres": body.genres, "media_type": body.media_type, "year": body.year, "mode": "general"}
                 }).execute()
             except Exception as e:
                 log.warning("Could not persist session to DB", error=str(e))
@@ -115,10 +117,10 @@ async def recommend_movie(request: Request, body: RecommendRequest):
 async def recommend_movie_by_title(request: Request, body: TitleRecommendRequest):
     session_id = str(uuid.uuid4())
     log = logger.bind(session_id=session_id)
-    log.info("Received title recommendation request", title=body.title, media_type=body.media_type)
+    log.info("Received title recommendation request", title=body.title, media_type=body.media_type, year=body.year)
     
     try:
-        movie_metadata = await fetch_movie_metadata(body.title, media_type=body.media_type)
+        movie_metadata = await fetch_movie_metadata(body.title, year=body.year, media_type=body.media_type)
         
         # Persist session to DB
         supabase = get_supabase_client()

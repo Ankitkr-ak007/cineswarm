@@ -13,6 +13,7 @@ class RecommendRequest(BaseModel):
     genres: list[str] = Field(default_factory=list, description="Preferred genres.")
     media_type: str = Field(default="all", description="Media type: 'all', 'movie', or 'tv'")
     industry: str = Field(default="all", description="Film industry: 'all', 'hollywood', 'bollywood', 'south_indian', 'anime_kdrama'")
+    year: int | str | None = Field(default=None, description="Optional release year or decade (e.g. 2021 or '1990s')")
 
 class RecommendResponse(BaseModel):
     session_id: str = Field(..., description="A unique identifier for the recommendation session.")
@@ -36,6 +37,7 @@ class FeedbackResponse(BaseModel):
 class TitleRecommendRequest(BaseModel):
     title: str = Field(..., description="The exact title of the movie or TV show to search for.")
     media_type: str = Field(default="all", description="Media type: 'all', 'movie', or 'tv'")
+    year: int | None = Field(default=None, description="Optional release year (e.g. 2021, 1994)")
 
 class FavoriteRequest(BaseModel):
     movie_id: int

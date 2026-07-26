@@ -42,6 +42,15 @@ const STREAMING_PROVIDERS = [
   { name: "Apple TV+", id: "apple" },
 ];
 
+const RELEASE_ERAS = [
+  { name: "All Eras", id: "all" },
+  { name: "2020s (Recent Hits)", id: "2020s" },
+  { name: "2010s", id: "2010s" },
+  { name: "2000s", id: "2000s" },
+  { name: "1990s (Classics)", id: "1990s" },
+  { name: "1980s & Earlier", id: "1980s" },
+];
+
 const FAST_VIBES = [
   "🤯 Mind-Bending",
   "🍿 Popcorn Binge",
@@ -95,8 +104,10 @@ export default function RequestForm() {
   const [mediaType, setMediaType] = useState<"all" | "movie" | "tv">("all");
   const [selectedIndustry, setSelectedIndustry] = useState<string>("all");
   const [selectedPlatform, setSelectedPlatform] = useState<string>("all");
+  const [selectedEra, setSelectedEra] = useState<string>("all");
   const [mood, setMood] = useState("");
   const [searchTitle, setSearchTitle] = useState("");
+  const [searchYear, setSearchYear] = useState("");
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [favorites, setFavorites] = useState<SavedMovie[]>([]);
@@ -190,7 +201,8 @@ export default function RequestForm() {
             mood: finalMood,
             genres: selectedGenres,
             media_type: mediaType,
-            industry: selectedIndustry
+            industry: selectedIndustry,
+            year: selectedEra !== "all" ? selectedEra : undefined
           }
         });
         
@@ -208,7 +220,8 @@ export default function RequestForm() {
         const { data, error } = await apiClient.POST("/api/v1/recommend/title", {
           body: {
             title: searchTitle,
-            media_type: mediaType
+            media_type: mediaType,
+            year: searchYear ? parseInt(searchYear) : undefined
           }
         });
         
@@ -489,6 +502,30 @@ export default function RequestForm() {
                     </div>
                   </div>
 
+                  {/* Release Era / Decade Filter */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+                      Release Era / Decade
+                    </Label>
+                    <div className="flex flex-wrap gap-2">
+                      {RELEASE_ERAS.map((era) => (
+                        <button
+                          key={era.id}
+                          type="button"
+                          onClick={() => setSelectedEra(era.id)}
+                          className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer border ${
+                            selectedEra === era.id
+                              ? "bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-500/20"
+                              : "bg-slate-100 dark:bg-slate-950/60 hover:bg-slate-200 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800"
+                          }`}
+                        >
+                          {era.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* Genres list selector */}
                   <div className="space-y-3">
                     <Label className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Preferred Genres</Label>
@@ -512,20 +549,36 @@ export default function RequestForm() {
                   </div>
                 </>
               ) : (
-                /* Direct Search input */
-                <div className="space-y-3">
-                  <Label htmlFor="searchTitle" className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                    <Search className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                    Enter Movie or TV Show Title
-                  </Label>
-                  <Input
-                    id="searchTitle"
-                    placeholder={mediaType === "tv" ? "e.g. Stranger Things, Breaking Bad, The Office..." : "e.g. Inception, The Matrix, Interstellar..."}
-                    value={searchTitle}
-                    onChange={(e) => setSearchTitle(e.target.value)}
-                    className="h-14 text-base bg-slate-50 dark:bg-slate-950/80 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:ring-blue-500 rounded-2xl px-4"
-                    required
-                  />
+                /* Direct Search inputs with Release Year */
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="sm:col-span-2 space-y-3">
+                    <Label htmlFor="searchTitle" className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                      <Search className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      Enter Movie or TV Show Title
+                    </Label>
+                    <Input
+                      id="searchTitle"
+                      placeholder={mediaType === "tv" ? "e.g. Stranger Things, Breaking Bad..." : "e.g. Dune, Inception, Avatar..."}
+                      value={searchTitle}
+                      onChange={(e) => setSearchTitle(e.target.value)}
+                      className="h-14 text-base bg-slate-50 dark:bg-slate-950/80 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:ring-blue-500 rounded-2xl px-4"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="searchYear" className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+                      Release Year (Optional)
+                    </Label>
+                    <Input
+                      id="searchYear"
+                      type="number"
+                      placeholder="e.g. 2021, 1984"
+                      value={searchYear}
+                      onChange={(e) => setSearchYear(e.target.value)}
+                      className="h-14 text-base bg-slate-50 dark:bg-slate-950/80 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:ring-blue-500 rounded-2xl px-4"
+                    />
+                  </div>
                 </div>
               )}
 

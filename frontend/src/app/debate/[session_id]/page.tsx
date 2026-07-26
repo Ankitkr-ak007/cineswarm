@@ -303,7 +303,9 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
                     {copied ? "Copied Link!" : "Share Debate"}
                   </button>
                 </div>
-                <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight mt-2.5">{movieMetadata.title}</h2>
+                <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight mt-2.5">
+                  {movieMetadata.title} {movieMetadata.release_date ? <span className="text-xl font-bold text-slate-400 dark:text-slate-500 font-normal">({new Date(movieMetadata.release_date).getFullYear()})</span> : null}
+                </h2>
                 <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-slate-500 dark:text-slate-400 mt-1">
                   {movieMetadata.release_date && (
                     <span>

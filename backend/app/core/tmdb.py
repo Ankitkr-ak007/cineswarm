@@ -19,40 +19,39 @@ class MovieNotFoundError(Exception):
     wait=wait_exponential(multiplier=1, min=2, max=10),
     retry=retry_if_exception_type((httpx.RequestError, TMDBError))
 )
-async def fetch_movie_metadata(title: str, media_type: str = "all") -> dict:
-    """Fetch movie or TV show metadata from TMDB by title."""
+async def fetch_movie_metadata(title: str, year: int | None = None, media_type: str = "all") -> dict:
+    """Fetch movie or TV show metadata from TMDB by title and optional year."""
     # Check cache first
     supabase = get_supabase_client()
-    if supabase:
+    if supabase and not year:
         try:
             res = supabase.table("movies").select("*").ilike("title", title).execute()
             if res.data:
                 movie = res.data[0]
                 genres_data = movie.get("genres") or {}
-                if isinstance(genres_data, dict) and "credits" in genres_data:
-                    metadata = {
-                        "id": movie.get("tmdb_id"),
-                        "title": movie.get("title"),
-                        "overview": movie.get("overview"),
-                        "release_date": str(movie.get("release_date")) if movie.get("release_date") else None,
-                        "poster_path": movie.get("poster_path"),
-                        "backdrop_path": genres_data.get("backdrop_path"),
-                        "credits": genres_data.get("credits"),
-                        "videos": genres_data.get("videos"),
-                        "watch/providers": genres_data.get("watch/providers"),
-                        "similar": genres_data.get("similar"),
-                        "release_dates": genres_data.get("release_dates"),
-                        "certification": movie.get("certification"),
-                        "genres": genres_data.get("genres") if isinstance(genres_data, dict) else movie.get("genres"),
-                        "vote_average": genres_data.get("vote_average") if isinstance(genres_data, dict) and "vote_average" in genres_data else (movie.get("vote_average") or 0.0),
-                        "vote_count": genres_data.get("vote_count") if isinstance(genres_data, dict) and "vote_count" in genres_data else (movie.get("vote_count") or 0),
-                        "popularity": genres_data.get("popularity") if isinstance(genres_data, dict) and "popularity" in genres_data else (movie.get("popularity") or 0.0),
-                        "media_type": genres_data.get("media_type", "movie"),
-                        "number_of_seasons": genres_data.get("number_of_seasons"),
-                        "number_of_episodes": genres_data.get("number_of_episodes"),
-                    }
-                    logger.info("Found cached content in database by title", title=title, id=metadata["id"])
-                    return metadata
+                metadata = {
+                    "id": movie.get("tmdb_id"),
+                    "title": movie.get("title"),
+                    "overview": movie.get("overview"),
+                    "release_date": movie.get("release_date"),
+                    "poster_path": movie.get("poster_path"),
+                    "backdrop_path": genres_data.get("backdrop_path") if isinstance(genres_data, dict) else None,
+                    "credits": genres_data.get("credits"),
+                    "videos": genres_data.get("videos"),
+                    "watch/providers": genres_data.get("watch/providers"),
+                    "similar": genres_data.get("similar"),
+                    "release_dates": genres_data.get("release_dates"),
+                    "certification": movie.get("certification"),
+                    "genres": genres_data.get("genres") if isinstance(genres_data, dict) else movie.get("genres"),
+                    "vote_average": genres_data.get("vote_average") if isinstance(genres_data, dict) and "vote_average" in genres_data else (movie.get("vote_average") or 0.0),
+                    "vote_count": genres_data.get("vote_count") if isinstance(genres_data, dict) and "vote_count" in genres_data else (movie.get("vote_count") or 0),
+                    "popularity": genres_data.get("popularity") if isinstance(genres_data, dict) and "popularity" in genres_data else (movie.get("popularity") or 0.0),
+                    "media_type": genres_data.get("media_type", "movie"),
+                    "number_of_seasons": genres_data.get("number_of_seasons"),
+                    "number_of_episodes": genres_data.get("number_of_episodes"),
+                }
+                logger.info("Found cached content in database by title", title=title, id=metadata["id"])
+                return metadata
         except Exception as e:
             logger.warning("Failed to check movies cache by title", error=str(e))
 
@@ -71,6 +70,13 @@ async def fetch_movie_metadata(title: str, media_type: str = "all") -> dict:
             "language": "en-US",
             "page": 1
         }
+        if year:
+            if media_type == "movie":
+                params["primary_release_year"] = year
+            elif media_type == "tv":
+                params["first_air_date_year"] = year
+            else:
+                params["year"] = year
 
         try:
             response = await client.get(url, params=params, headers=headers, timeout=10.0)
@@ -89,15 +95,29 @@ async def fetch_movie_metadata(title: str, media_type: str = "all") -> dict:
         results = data.get("results", [])
         valid_results = [r for r in results if r.get("media_type") in ("movie", "tv") or "title" in r or "name" in r]
         
+        if year:
+            year_str = str(year)
+            matching_year_results = [
+                r for r in valid_results
+                if (r.get("release_date", "").startswith(year_str) or r.get("first_air_date", "").startswith(year_str))
+            ]
+            if matching_year_results:
+                valid_results = matching_year_results
+        
         if not valid_results and media_type != "movie":
             # Fallback search via movie endpoint if multi/tv returns nothing
             fb_url = "https://api.themoviedb.org/3/search/movie"
             fb_resp = await client.get(fb_url, params=params, headers=headers, timeout=10.0)
             if fb_resp.status_code == 200 and fb_resp.json().get("results"):
                 valid_results = fb_resp.json()["results"]
+                if year:
+                    year_str = str(year)
+                    matching_fb = [r for r in valid_results if r.get("release_date", "").startswith(year_str)]
+                    if matching_fb:
+                        valid_results = matching_fb
 
         if not valid_results:
-            raise MovieNotFoundError(f"Content '{title}' not found.")
+            raise MovieNotFoundError(f"Content '{title}' ({year or 'any year'}) not found.")
             
         top_match = valid_results[0]
         item_id = top_match["id"]
