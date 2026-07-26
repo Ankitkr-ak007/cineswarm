@@ -39,6 +39,8 @@ interface MovieMetadata {
   trailer_key?: string | null;
   watch_providers?: { name: string; logo_path: string | null; link?: string | null }[];
   similar_movies?: { id: number; title: string; poster_path: string | null }[];
+  cosine_similarity?: number;
+  match_percentage?: number;
 }
 
 function DebateViewInner({ sessionId }: { sessionId: string }) {
