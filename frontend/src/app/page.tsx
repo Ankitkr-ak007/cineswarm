@@ -15,13 +15,13 @@ const GENRES = ["Action", "Comedy", "Drama", "Sci-Fi", "Horror", "Romance", "Ani
 
 const POPULAR_QUICK_PICKS = [
   { title: "Inception", type: "movie", emoji: "🎬", tag: "Hollywood", desc: "Mind-Bending Thriller" },
+  { title: "Attack on Titan", type: "tv", emoji: "👺", tag: "Anime", desc: "Dark Action Fantasy" },
   { title: "RRR", type: "movie", emoji: "🗡️", tag: "South Indian", desc: "Epic Action Sensation" },
   { title: "3 Idiots", type: "movie", emoji: "🕉️", tag: "Bollywood", desc: "Iconic Comedy Drama" },
   { title: "Stranger Things", type: "tv", emoji: "📺", tag: "Hollywood Series", desc: "Sci-Fi Mystery" },
-  { title: "Squid Game", type: "tv", emoji: "🌸", tag: "K-Drama", desc: "Survival Thriller" },
-  { title: "K.G.F: Chapter 1", type: "movie", emoji: "🗡️", tag: "South Indian", desc: "High-Octane Action" },
+  { title: "Squid Game", type: "tv", emoji: "🇰🇷", tag: "K-Drama", desc: "Survival Thriller" },
+  { title: "Demon Slayer", type: "tv", emoji: "⚔️", tag: "Anime", desc: "Shonen Masterpiece" },
   { title: "Sacred Games", type: "tv", emoji: "🕉️", tag: "Bollywood Series", desc: "Noir Crime Thriller" },
-  { title: "Interstellar", type: "movie", emoji: "🎬", tag: "Hollywood", desc: "Sci-Fi Masterpiece" },
 ];
 
 const CINEMA_INDUSTRIES = [
@@ -29,7 +29,8 @@ const CINEMA_INDUSTRIES = [
   { name: "Hollywood", id: "hollywood", emoji: "🎬", desc: "English & Western" },
   { name: "Bollywood", id: "bollywood", emoji: "🕉️", desc: "Hindi Cinema & Series" },
   { name: "South Indian", id: "south_indian", emoji: "🗡️", desc: "Tamil, Telugu, Maly, Kan" },
-  { name: "Anime & Kdrama", id: "anime_kdrama", emoji: "🌸", desc: "K-Dramas & Anime" },
+  { name: "Japanese Anime", id: "anime", emoji: "👺", desc: "Japanese Animation" },
+  { name: "K-Drama & Korean", id: "kdrama", emoji: "🇰🇷", desc: "Korean Cinema & Series" },
 ];
 
 const STREAMING_PROVIDERS = [
@@ -359,7 +360,7 @@ export default function RequestForm() {
                   <Globe className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                   Select Cinema Industry / Region
                 </Label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
                   {CINEMA_INDUSTRIES.map((ind) => (
                     <button
                       key={ind.id}
