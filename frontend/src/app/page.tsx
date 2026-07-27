@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/api-client";
+import { saveSessionToHistory } from "@/lib/history-storage";
 import { Film, Search, Sparkles, Tv, Flame, Star, Zap, ArrowRight, Globe, Calendar } from "lucide-react";
 
 const GENRES = ["Action", "Comedy", "Drama", "Sci-Fi", "Horror", "Romance", "Animation", "Family"];
@@ -143,6 +144,7 @@ export default function RequestForm() {
         return;
       }
       if (data?.session_id) {
+        saveSessionToHistory({ id: data.session_id, title: title, mode: "quickpick" });
         router.push(`/debate/${data.session_id}`);
       }
     } catch (err) {
@@ -179,6 +181,7 @@ export default function RequestForm() {
         return;
       }
       if (data?.session_id) {
+        saveSessionToHistory({ id: data.session_id, mood: randomMood, mode: "mood" });
         router.push(`/debate/${data.session_id}`);
       }
     } catch (err) {
@@ -213,6 +216,7 @@ export default function RequestForm() {
         }
         
         if (data?.session_id) {
+          saveSessionToHistory({ id: data.session_id, mood: mood, mode: "mood" });
           router.push(`/debate/${data.session_id}`);
         }
       } else {
@@ -232,6 +236,7 @@ export default function RequestForm() {
         }
         
         if (data?.session_id) {
+          saveSessionToHistory({ id: data.session_id, title: searchTitle, mode: "title" });
           router.push(`/debate/${data.session_id}`);
         }
       }
