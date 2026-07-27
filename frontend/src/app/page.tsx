@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { apiClient } from "@/lib/api-client";
 import { Film, Search, Sparkles, Tv, Flame, Star, Zap, ArrowRight, Globe, Calendar } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 const GENRES = ["Action", "Comedy", "Drama", "Sci-Fi", "Horror", "Romance", "Animation", "Family"];
 
@@ -266,68 +265,42 @@ export default function RequestForm() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col selection:bg-blue-500 selection:text-white transition-colors duration-300 relative overflow-hidden" suppressHydrationWarning>
       {/* Background ambient radial glows */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[500px] bg-gradient-to-b from-blue-500/10 via-indigo-500/5 to-transparent dark:from-blue-600/15 dark:via-indigo-600/5 blur-3xl pointer-events-none -z-10" />
-      <div className="absolute top-96 right-0 w-[400px] h-[400px] bg-purple-500/10 dark:bg-purple-600/10 blur-3xl pointer-events-none -z-10" />
-      <div className="absolute bottom-10 left-0 w-[400px] h-[400px] bg-blue-500/10 dark:bg-blue-600/10 blur-3xl pointer-events-none -z-10" />
-
-      {/* Header bar */}
-      <header className="w-full border-b border-slate-200 dark:border-slate-800/80 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl sticky top-0 z-50 transition-colors">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 text-lg">
-              🐝
-            </div>
-            <div className="flex flex-col">
-              <span className="text-xl font-black tracking-tight bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-white dark:via-blue-200 dark:to-indigo-400 bg-clip-text text-transparent">
-                CineSwarm
-              </span>
-              <span className="text-[10px] font-bold text-blue-600/80 dark:text-blue-400/80 uppercase tracking-widest -mt-1">
-                AI Debate Discovery
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse"></span>
-              Swarm Agents Active
-            </span>
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[600px] bg-gradient-to-b from-blue-600/15 via-indigo-600/10 to-transparent blur-3xl pointer-events-none -z-10" />
+      <div className="absolute top-96 right-0 w-[500px] h-[500px] bg-purple-600/15 blur-3xl pointer-events-none -z-10 animate-pulse" />
+      <div className="absolute bottom-10 left-0 w-[500px] h-[500px] bg-blue-600/15 blur-3xl pointer-events-none -z-10 animate-pulse" />
 
       {/* Hero Section */}
-      <section className="pt-12 pb-8 px-4 text-center max-w-4xl mx-auto space-y-6">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-wider backdrop-blur-sm">
-          <Zap className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
-          <span>Next-Gen AI Agent Swarm for Movies & Web Series</span>
+      <section className="pt-10 pb-8 px-4 text-center max-w-5xl mx-auto space-y-6">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-300 text-xs font-black uppercase tracking-wider backdrop-blur-md shadow-sm">
+          <Zap className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400 animate-pulse" />
+          <span>Next-Gen AI Multi-Agent Swarm Cinema Engine</span>
         </div>
 
-        <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-none text-slate-900 dark:text-white">
+        <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-tight text-slate-900 dark:text-white">
           Don&apos;t Spend 30 Minutes Scrolling. <br className="hidden sm:inline" />
-          <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-300 dark:to-purple-400 bg-clip-text text-transparent">
-            Let AI Agents Debate What You Watch.
+          <span className="text-gradient-cinema animate-text-shimmer">
+            Let 4 AI Agents Debate What You Watch.
           </span>
         </h1>
 
-        <p className="text-slate-600 dark:text-slate-400 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-          Four specialized AI agents clash live in real-time to review craft, atmosphere, and hidden potential — delivering your ultimate match with direct India streaming links.
+        <p className="text-slate-600 dark:text-slate-300 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed font-medium">
+          Four specialized AI critics clash live in real-time to review craft, atmosphere, and hidden potential — delivering your perfect match powered by Cosine Vector Similarity.
         </p>
 
         {/* AI Swarm Agent Squad Showcase */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 max-w-4xl mx-auto">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 pt-4 max-w-4xl mx-auto">
           {SWARM_AGENTS.map((agent, i) => (
             <div 
               key={i} 
-              className={`p-3.5 rounded-2xl bg-gradient-to-b ${agent.color} border border-slate-200 dark:border-slate-800 backdrop-blur-md text-left transition-all hover:scale-[1.02] cursor-default bg-white/70 dark:bg-slate-900/70`}
+              className={`p-4 rounded-3xl bg-gradient-to-b ${agent.color} border backdrop-blur-md text-left transition-all duration-300 hover:scale-[1.03] hover:shadow-xl cursor-default shadow-md`}
             >
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xl">{agent.avatar}</span>
-                <span className="text-[10px] font-black uppercase tracking-wider opacity-70">AGENT</span>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-2xl">{agent.avatar}</span>
+                <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-black/10 dark:bg-white/10">LIVE</span>
               </div>
-              <h3 className="font-bold text-sm text-slate-800 dark:text-white">{agent.name}</h3>
-              <p className="text-[11px] font-semibold opacity-90 mb-1">{agent.role}</p>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">{agent.desc}</p>
+              <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">{agent.name}</h3>
+              <p className="text-[11px] font-bold opacity-90 mb-1">{agent.role}</p>
+              <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-tight font-medium">{agent.desc}</p>
             </div>
           ))}
         </div>
