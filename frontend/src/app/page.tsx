@@ -354,7 +354,7 @@ export default function RequestForm() {
                   <Globe className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                   Select Cinema Industry / Region
                 </Label>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
                   {CINEMA_INDUSTRIES.map((ind) => (
                     <button
                       key={ind.id}
@@ -367,7 +367,7 @@ export default function RequestForm() {
                       }`}
                     >
                       <span className="text-base">{ind.emoji}</span>
-                      <span>{ind.name}</span>
+                      <span className="truncate max-w-full">{ind.name}</span>
                     </button>
                   ))}
                 </div>
@@ -379,7 +379,7 @@ export default function RequestForm() {
                   <Film className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   Select Content Type
                 </Label>
-                <div className="grid grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   <button
                     type="button"
                     onClick={() => setMediaType("all")}
