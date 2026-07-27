@@ -11,8 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { apiClient } from "@/lib/api-client";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { ExternalLink, Share2, Check, Play } from "lucide-react";
+import { ExternalLink, Share2, Check, Play, ArrowLeft } from "lucide-react";
 
 interface AgentMessage {
   agent: string;
@@ -230,17 +229,21 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
       )}
 
       <div className="max-w-5xl mx-auto p-4 md:p-8 space-y-8 relative z-10">
-        {/* Header navigation */}
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
-          <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => router.push("/")}>
-            <span className="text-2xl">🐝</span>
-            <h1 className="text-xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent tracking-tight">
-              CineSwarm <span className="sr-only">Live Swarm Debate</span>
-            </h1>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700">Debate Mode</span>
-            <ThemeToggle />
+        {/* Sub-header navigation breadcrumb */}
+        <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800/80 pb-4">
+          <button
+            onClick={() => router.push("/")}
+            className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Discovery</span>
+          </button>
+          
+          <div className="flex items-center gap-2.5">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Live AI Debate Session</span>
+            </span>
           </div>
         </div>
 
