@@ -8,14 +8,19 @@ interface TrailerModalProps {
   onClose: () => void;
   title: string;
   year?: number | string | null;
+  trailerKey?: string | null;
 }
 
-export function TrailerModal({ isOpen, onClose, title, year }: TrailerModalProps) {
+export function TrailerModal({ isOpen, onClose, title, year, trailerKey }: TrailerModalProps) {
   if (!isOpen) return null;
 
   const searchQuery = encodeURIComponent(`${title} ${year ? year : ""} official trailer`);
-  const embedUrl = `https://www.youtube-nocookie.com/embed?listType=search&list=${searchQuery}`;
-  const directWatchUrl = `https://www.youtube.com/results?search_query=${searchQuery}`;
+  const embedUrl = trailerKey 
+    ? `https://www.youtube-nocookie.com/embed/${trailerKey}?autoplay=1&rel=0`
+    : `https://www.youtube.com/results?search_query=${searchQuery}`;
+  const directWatchUrl = trailerKey
+    ? `https://www.youtube.com/watch?v=${trailerKey}`
+    : `https://www.youtube.com/results?search_query=${searchQuery}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">

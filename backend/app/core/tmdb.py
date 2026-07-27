@@ -172,6 +172,10 @@ async def fetch_movie_metadata(title: str, year: int | None = None, media_type: 
         details_data["release_date"] = normalized_date
         details_data["certification"] = certification
         details_data["media_type"] = detected_type
+        details_data["trailer_key"] = extract_trailer_key(details_data)
+        details_data["cast"] = extract_cast(details_data)
+        details_data["watch_providers"] = extract_watch_providers(details_data)
+        details_data["similar_movies"] = extract_similar_movies(details_data)
 
         # Store in database cache
         if supabase:
@@ -190,6 +194,7 @@ async def fetch_movie_metadata(title: str, year: int | None = None, media_type: 
                     "media_type": detected_type,
                     "number_of_seasons": details_data.get("number_of_seasons"),
                     "number_of_episodes": details_data.get("number_of_episodes"),
+                    "trailer_key": details_data.get("trailer_key"),
                 }
                 supabase.table("movies").upsert({
                     "tmdb_id": details_data.get("id"),
@@ -400,11 +405,11 @@ async def suggest_movies_from_llm(mood: str, genres: list[str], content_mode: st
         industry_desc = "specifically from Asian cinema, K-dramas (Korean dramas), or Japanese anime"
         
     year_desc = f"\nRelease Year / Era Preference: {year}" if year else ""
-    system_prompt = f'You are an entertainment recommendation assistant. Suggest 5 real, popular {type_str} {industry_desc} matching the user\'s request. Output strictly as JSON: {{"titles": ["Title 1", "Title 2", "Title 3", "Title 4", "Title 5"]}}'
+    system_prompt = f'You are an expert film recommendation engine. Suggest 8 highly-rated, relevant {type_str} {industry_desc} strictly matching the user\'s mood and genre request. Output strictly as JSON: {{"titles": ["Title 1", "Title 2", "Title 3", "Title 4", "Title 5", "Title 6", "Title 7", "Title 8"]}}'
     user_prompt = f"Mood/Vibe: {mood}\nGenres: {genres_str}\nIndustry/Region: {industry}{year_desc}\nContent Mode: {content_mode} (if 'kids', only suggest family-friendly content)\nMedia Type Preference: {media_type}"
     
     try:
-        parsed = await generate_json_with_fallback(system_prompt, user_prompt, temperature=0.8)
+        parsed = await generate_json_with_fallback(system_prompt, user_prompt, temperature=0.4)
         if isinstance(parsed, dict) and "titles" in parsed and isinstance(parsed["titles"], list):
             return [str(t) for t in parsed["titles"]]
         elif isinstance(parsed, list):

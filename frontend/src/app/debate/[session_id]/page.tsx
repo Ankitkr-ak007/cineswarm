@@ -638,6 +638,7 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
         onClose={() => setTrailerExpanded(false)}
         title={movieMetadata?.title || "Movie"}
         year={movieMetadata?.release_date ? new Date(movieMetadata.release_date).getFullYear() : null}
+        trailerKey={movieMetadata?.trailer_key}
       />
     </div>
   );
