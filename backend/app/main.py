@@ -67,21 +67,17 @@ async def recommend_movie(request: Request, body: RecommendRequest):
         parsed_year = int(body.year) if (body.year and str(body.year).isdigit()) else None
         
         # Fetch user interaction history from DB to build learned preference vector
-        favorites = []
         feedback_list = []
         supabase = get_supabase_client()
         if supabase:
             try:
-                fav_res = supabase.table("favorites").select("*").limit(25).execute()
-                if fav_res.data:
-                    favorites = fav_res.data
-                fb_res = supabase.table("feedback").select("*").limit(50).execute()
+                fb_res = supabase.table("feedback").select("*, movies(*)").limit(50).execute()
                 if fb_res.data:
                     feedback_list = fb_res.data
             except Exception as e:
                 log.warning("Could not fetch user history for vector learning", error=str(e))
 
-        user_profile_vec = build_user_profile_vector(favorites, feedback_list)
+        user_profile_vec = build_user_profile_vector([], feedback_list)
         
         candidate_metas = []
         for title in candidate_titles:
@@ -154,21 +150,17 @@ async def recommend_movie_by_title(request: Request, body: TitleRecommendRequest
         movie_metadata = await fetch_movie_metadata(body.title, year=body.year, media_type=body.media_type)
         
         # Calculate Cosine Similarity match percentage for direct title search
-        favorites = []
         feedback_list = []
         supabase = get_supabase_client()
         if supabase:
             try:
-                fav_res = supabase.table("favorites").select("*").limit(25).execute()
-                if fav_res.data:
-                    favorites = fav_res.data
-                fb_res = supabase.table("feedback").select("*").limit(50).execute()
+                fb_res = supabase.table("feedback").select("*, movies(*)").limit(50).execute()
                 if fb_res.data:
                     feedback_list = fb_res.data
             except Exception:
                 pass
                 
-        user_profile_vec = build_user_profile_vector(favorites, feedback_list)
+        user_profile_vec = build_user_profile_vector([], feedback_list)
         item_vec = encode_item_vector(movie_metadata)
         sim_score = calculate_cosine_similarity(user_profile_vec, item_vec)
         movie_metadata["cosine_similarity"] = round(sim_score, 4)
