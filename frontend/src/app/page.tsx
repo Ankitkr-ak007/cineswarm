@@ -269,27 +269,27 @@ export default function RequestForm() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-purple-500 selection:text-white transition-colors duration-300 relative overflow-hidden bg-multiverse-grid" suppressHydrationWarning>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col selection:bg-purple-500 selection:text-white transition-colors duration-300 relative overflow-hidden bg-multiverse-grid" suppressHydrationWarning>
       {/* Multiverse Ambient Nebula Glows */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[650px] bg-gradient-to-b from-purple-600/20 via-indigo-600/15 to-transparent blur-3xl pointer-events-none -z-10" />
-      <div className="absolute top-80 right-0 w-[550px] h-[550px] bg-pink-600/15 blur-3xl pointer-events-none -z-10 animate-pulse" />
-      <div className="absolute top-96 left-0 w-[550px] h-[550px] bg-blue-600/15 blur-3xl pointer-events-none -z-10 animate-pulse" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[650px] bg-gradient-to-b from-purple-500/10 via-indigo-500/10 to-transparent dark:from-purple-600/20 dark:via-indigo-600/15 blur-3xl pointer-events-none -z-10" />
+      <div className="absolute top-80 right-0 w-[550px] h-[550px] bg-pink-500/10 dark:bg-pink-600/15 blur-3xl pointer-events-none -z-10 animate-pulse" />
+      <div className="absolute top-96 left-0 w-[550px] h-[550px] bg-blue-500/10 dark:bg-blue-600/15 blur-3xl pointer-events-none -z-10 animate-pulse" />
 
       {/* Hero Section */}
       <section className="pt-10 pb-8 px-4 text-center max-w-5xl mx-auto space-y-6">
-        <div className="inline-flex items-center gap-2 px-4.5 py-1.5 rounded-full bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 border border-purple-500/30 text-purple-300 text-xs font-black uppercase tracking-widest backdrop-blur-md shadow-lg shadow-purple-500/10">
-          <Zap className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
+        <div className="inline-flex items-center gap-2 px-4.5 py-1.5 rounded-full bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 border border-purple-500/30 text-purple-700 dark:text-purple-300 text-xs font-black uppercase tracking-widest backdrop-blur-md shadow-md">
+          <Zap className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 animate-pulse" />
           <span>Step Into The CineSwarm Multiverse</span>
         </div>
 
-        <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight leading-tight text-white">
+        <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight leading-tight text-slate-900 dark:text-white">
           Explore The Cinema Multiverse. <br className="hidden sm:inline" />
           <span className="text-gradient-multiverse animate-text-shimmer">
             4 AI Entities Clash To Pick Your Watch.
           </span>
         </h1>
 
-        <p className="text-slate-300 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed font-medium">
+        <p className="text-slate-600 dark:text-slate-300 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed font-medium">
           Enter any vibe or title to summon 4 specialized AI critics into live real-time debate — calculating exact Vector Cosine Similarity across every cinema realm.
         </p>
 
@@ -298,15 +298,15 @@ export default function RequestForm() {
           {SWARM_AGENTS.map((agent, i) => (
             <div 
               key={i} 
-              className={`p-4 rounded-3xl bg-slate-900/80 border border-slate-800 backdrop-blur-md text-left transition-all duration-300 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/20 hover:-translate-y-1 cursor-default`}
+              className={`p-4 rounded-3xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 backdrop-blur-md text-left transition-all duration-300 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/20 hover:-translate-y-1 cursor-default shadow-sm`}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-2xl">{agent.avatar}</span>
-                <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">CRITIC</span>
+                <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-500/10 dark:bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/30">CRITIC</span>
               </div>
-              <h3 className="font-extrabold text-sm text-white">{agent.name}</h3>
-              <p className="text-[11px] font-bold text-purple-400 mb-1">{agent.role}</p>
-              <p className="text-[10px] text-slate-400 leading-tight font-medium">{agent.desc}</p>
+              <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">{agent.name}</h3>
+              <p className="text-[11px] font-bold text-purple-600 dark:text-purple-400 mb-1">{agent.role}</p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight font-medium">{agent.desc}</p>
             </div>
           ))}
         </div>
@@ -314,8 +314,8 @@ export default function RequestForm() {
 
       {/* Main Form container */}
       <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 max-w-4xl mx-auto w-full">
-        <Card className="w-full shadow-2xl border border-purple-500/30 bg-slate-900/85 backdrop-blur-2xl rounded-3xl overflow-hidden transition-all shadow-purple-500/10">
-          <CardHeader className="text-center pb-6 border-b border-slate-800/80 bg-slate-950/60">
+        <Card className="w-full shadow-2xl border border-slate-200 dark:border-purple-500/30 bg-white/90 dark:bg-slate-900/85 backdrop-blur-2xl rounded-3xl overflow-hidden transition-all shadow-purple-500/10">
+          <CardHeader className="text-center pb-6 border-b border-slate-150 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/60">
             {/* Mode selection tabs */}
             <div className="flex bg-slate-100 dark:bg-slate-950/80 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800/80 max-w-md mx-auto">
               <button
