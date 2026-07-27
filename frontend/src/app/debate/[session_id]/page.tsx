@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { apiClient } from "@/lib/api-client";
+import { saveSessionToHistory } from "@/lib/history-storage";
 import { ExternalLink, Share2, Check, Play, ArrowLeft } from "lucide-react";
 
 interface AgentMessage {
@@ -147,6 +148,13 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
         
         if (data.status === "movie_info") {
           setMovieMetadata(data.movie_metadata);
+          if (sessionId && data.movie_metadata?.title) {
+            saveSessionToHistory({
+              id: sessionId as string,
+              title: data.movie_metadata.title,
+              mode: "title",
+            });
+          }
           return;
         }
 
