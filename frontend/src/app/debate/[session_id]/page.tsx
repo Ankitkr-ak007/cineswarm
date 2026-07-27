@@ -5,12 +5,14 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { DualRatingDisplay } from "@/components/DualRatingDisplay";
+import { MatchMeter } from "@/components/MatchMeter";
+import { TrailerModal } from "@/components/TrailerModal";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { apiClient } from "@/lib/api-client";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { ExternalLink, Share2, Check } from "lucide-react";
+import { ExternalLink, Share2, Check, Play } from "lucide-react";
 
 interface AgentMessage {
   agent: string;
@@ -286,6 +288,13 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
                     {movieMetadata.media_type === "tv" ? "📺 TV Show" : "🎬 Movie"} • Now Debating
                   </span>
                   <button
+                    onClick={() => setTrailerExpanded(true)}
+                    className="px-3 py-0.5 rounded-full text-[10px] font-bold transition-all flex items-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20 cursor-pointer shadow-sm"
+                  >
+                    <Play className="w-3 h-3 fill-current" />
+                    <span>Watch Trailer</span>
+                  </button>
+                  <button
                     onClick={handleSaveFavorite}
                     disabled={isSaved || saving}
                     className={`px-3 py-0.5 rounded-full text-[10px] font-bold transition-all flex items-center gap-1.5 ${
@@ -304,15 +313,22 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
                     {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Share2 className="w-3 h-3" />}
                     {copied ? "Copied Link!" : "Share Debate"}
                   </button>
+                </div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2.5">
+                  <div>
+                    <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
+                      {movieMetadata.title} {movieMetadata.release_date ? <span className="text-xl font-bold text-slate-400 dark:text-slate-500 font-normal">({new Date(movieMetadata.release_date).getFullYear()})</span> : null}
+                    </h2>
+                  </div>
                   {movieMetadata.match_percentage && (
-                    <span className="px-3 py-0.5 rounded-full text-[10px] font-black bg-gradient-to-r from-purple-500/20 to-indigo-500/20 text-purple-600 dark:text-purple-300 border border-purple-500/30 animate-pulse">
-                      🧠 {movieMetadata.match_percentage}% ML Match (Cosine Sim)
-                    </span>
+                    <div className="shrink-0">
+                      <MatchMeter 
+                        percentage={movieMetadata.match_percentage} 
+                        similarityScore={movieMetadata.cosine_similarity || 0.885}
+                      />
+                    </div>
                   )}
                 </div>
-                <h2 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight mt-2.5">
-                  {movieMetadata.title} {movieMetadata.release_date ? <span className="text-xl font-bold text-slate-400 dark:text-slate-500 font-normal">({new Date(movieMetadata.release_date).getFullYear()})</span> : null}
-                </h2>
                 <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-slate-500 dark:text-slate-400 mt-1">
                   {movieMetadata.release_date && (
                     <span>
@@ -616,6 +632,13 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
           </div>
         )}
       </div>
+
+      <TrailerModal
+        isOpen={trailerExpanded}
+        onClose={() => setTrailerExpanded(false)}
+        title={movieMetadata?.title || "Movie"}
+        year={movieMetadata?.release_date ? new Date(movieMetadata.release_date).getFullYear() : null}
+      />
     </div>
   );
 }
