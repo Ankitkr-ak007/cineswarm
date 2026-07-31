@@ -45,6 +45,16 @@ async def fetch_movie_metadata(title: str, year: int | None = None, media_type: 
                     genres_data = genres_raw if isinstance(genres_raw, dict) else {}
                     genres_list = genres_raw if isinstance(genres_raw, list) else (genres_data.get("genres") if isinstance(genres_data, dict) else [])
                     
+                    vote_avg = movie.get("vote_average")
+                    if vote_avg is None or vote_avg == 0.0:
+                        vote_avg = genres_data.get("vote_average") if isinstance(genres_data, dict) else 0.0
+                    vote_avg = float(vote_avg or 0.0)
+
+                    vote_cnt = movie.get("vote_count")
+                    if vote_cnt is None or vote_cnt == 0:
+                        vote_cnt = genres_data.get("vote_count") if isinstance(genres_data, dict) else 0
+                    vote_cnt = int(vote_cnt or 0)
+
                     metadata = {
                         "id": movie.get("tmdb_id"),
                         "title": movie.get("title"),
@@ -59,13 +69,15 @@ async def fetch_movie_metadata(title: str, year: int | None = None, media_type: 
                         "release_dates": genres_data.get("release_dates") if isinstance(genres_data, dict) else None,
                         "certification": movie.get("certification"),
                         "genres": genres_list,
-                        "vote_average": genres_data.get("vote_average") if isinstance(genres_data, dict) and "vote_average" in genres_data else (movie.get("vote_average") or 0.0),
-                        "vote_count": genres_data.get("vote_count") if isinstance(genres_data, dict) and "vote_count" in genres_data else (movie.get("vote_count") or 0),
+                        "vote_average": vote_avg,
+                        "vote_count": vote_cnt,
                         "popularity": genres_data.get("popularity") if isinstance(genres_data, dict) and "popularity" in genres_data else (movie.get("popularity") or 0.0),
                         "media_type": genres_data.get("media_type", "movie") if isinstance(genres_data, dict) else "movie",
                         "number_of_seasons": genres_data.get("number_of_seasons") if isinstance(genres_data, dict) else None,
                         "number_of_episodes": genres_data.get("number_of_episodes") if isinstance(genres_data, dict) else None,
                         "trailer_key": genres_data.get("trailer_key") if isinstance(genres_data, dict) else None,
+                        "collection_parts": genres_data.get("collection_parts") if isinstance(genres_data, dict) else [],
+                        "seasons_list": genres_data.get("seasons_list") if isinstance(genres_data, dict) else extract_seasons_list(genres_data),
                     }
                     logger.info("Found fresh cached content in database by title", title=title, id=metadata["id"])
                     return metadata
@@ -121,7 +133,7 @@ async def fetch_movie_metadata(title: str, year: int | None = None, media_type: 
             if matching_year_results:
                 valid_results = matching_year_results
         
-        if not valid_results and media_type != "movie":
+        if not valid_results:
             # Fallback search via movie endpoint if multi/tv returns nothing
             fb_url = "https://api.themoviedb.org/3/search/movie"
             fb_resp = await client.get(fb_url, params=params, headers=headers, timeout=10.0)
@@ -186,10 +198,15 @@ async def fetch_movie_metadata(title: str, year: int | None = None, media_type: 
                 logger.warning("Failed to fetch collection parts", error=str(coll_err))
 
         details_data["collection_parts"] = collection_parts
+        details_data["seasons_list"] = extract_seasons_list(details_data)
 
-        # Normalize title, release date, certification & media_type
+        # Normalize title, release date, certification, ratings & media_type
         normalized_title = details_data.get("title") or details_data.get("name") or details_data.get("original_name") or title
         normalized_date = details_data.get("release_date") or details_data.get("first_air_date")
+        
+        vote_avg = details_data.get("vote_average") or top_match.get("vote_average") or 0.0
+        vote_cnt = details_data.get("vote_count") or top_match.get("vote_count") or 0
+        pop = details_data.get("popularity") or top_match.get("popularity") or 0.0
         
         certification = None
         if detected_type == "tv":
@@ -214,6 +231,9 @@ async def fetch_movie_metadata(title: str, year: int | None = None, media_type: 
         details_data["release_date"] = normalized_date
         details_data["certification"] = certification
         details_data["media_type"] = detected_type
+        details_data["vote_average"] = float(vote_avg)
+        details_data["vote_count"] = int(vote_cnt)
+        details_data["popularity"] = float(pop)
         details_data["trailer_key"] = extract_trailer_key(details_data)
         details_data["cast"] = extract_cast(details_data)
         details_data["watch_providers"] = extract_watch_providers(details_data)
@@ -230,13 +250,15 @@ async def fetch_movie_metadata(title: str, year: int | None = None, media_type: 
                     "similar": details_data.get("similar"),
                     "release_dates": details_data.get("release_dates"),
                     "backdrop_path": details_data.get("backdrop_path"),
-                    "vote_average": details_data.get("vote_average"),
-                    "vote_count": details_data.get("vote_count"),
-                    "popularity": details_data.get("popularity"),
+                    "vote_average": float(vote_avg),
+                    "vote_count": int(vote_cnt),
+                    "popularity": float(pop),
                     "media_type": detected_type,
                     "number_of_seasons": details_data.get("number_of_seasons"),
                     "number_of_episodes": details_data.get("number_of_episodes"),
                     "trailer_key": details_data.get("trailer_key"),
+                    "collection_parts": collection_parts,
+                    "seasons_list": details_data.get("seasons_list"),
                 }
                 supabase.table("movies").upsert({
                     "tmdb_id": details_data.get("id"),
@@ -275,6 +297,14 @@ async def fetch_movie_details_by_id(movie_id: int) -> dict:
 
                 genres_data = movie.get("genres") or {}
                 if is_fresh and isinstance(genres_data, dict) and "credits" in genres_data:
+                    vote_avg = movie.get("vote_average")
+                    if vote_avg is None or vote_avg == 0.0:
+                        vote_avg = genres_data.get("vote_average") if isinstance(genres_data, dict) else 0.0
+
+                    vote_cnt = movie.get("vote_count")
+                    if vote_cnt is None or vote_cnt == 0:
+                        vote_cnt = genres_data.get("vote_count") if isinstance(genres_data, dict) else 0
+
                     metadata = {
                         "id": movie.get("tmdb_id"),
                         "title": movie.get("title"),
@@ -289,10 +319,12 @@ async def fetch_movie_details_by_id(movie_id: int) -> dict:
                         "release_dates": genres_data.get("release_dates"),
                         "certification": movie.get("certification"),
                         "genres": genres_data.get("genres") if isinstance(genres_data, dict) else movie.get("genres"),
-                        "vote_average": genres_data.get("vote_average") if isinstance(genres_data, dict) and "vote_average" in genres_data else (movie.get("vote_average") or 0.0),
-                        "vote_count": genres_data.get("vote_count") if isinstance(genres_data, dict) and "vote_count" in genres_data else (movie.get("vote_count") or 0),
+                        "vote_average": float(vote_avg or 0.0),
+                        "vote_count": int(vote_cnt or 0),
                         "popularity": genres_data.get("popularity") if isinstance(genres_data, dict) and "popularity" in genres_data else (movie.get("popularity") or 0.0),
                         "trailer_key": genres_data.get("trailer_key"),
+                        "collection_parts": genres_data.get("collection_parts") if isinstance(genres_data, dict) else [],
+                        "seasons_list": genres_data.get("seasons_list") if isinstance(genres_data, dict) else extract_seasons_list(genres_data),
                     }
                     logger.info("Found fresh cached movie in database by ID", id=movie_id)
                     return metadata
@@ -312,10 +344,48 @@ async def fetch_movie_details_by_id(movie_id: int) -> dict:
     
     async with httpx.AsyncClient() as client:
         response = await client.get(url, params=params, headers=headers, timeout=10.0)
+        if response.status_code == 404:
+            # Fallback to TV series endpoint if movie/ ID returns 404
+            tv_url = f"https://api.themoviedb.org/3/tv/{movie_id}"
+            tv_params = {
+                "api_key": settings.TMDB_API_KEY,
+                "append_to_response": "content_ratings,credits,videos,watch/providers,similar",
+                "language": "en-US"
+            }
+            response = await client.get(tv_url, params=tv_params, headers=headers, timeout=10.0)
+            
         response.raise_for_status()
         details_data = response.json()
         
-        # Extract US certification
+        # Fetch collection parts if part of a movie franchise
+        collection_parts = []
+        belongs_to_coll = details_data.get("belongs_to_collection")
+        if isinstance(belongs_to_coll, dict) and belongs_to_coll.get("id"):
+            coll_id = belongs_to_coll.get("id")
+            try:
+                coll_url = f"https://api.themoviedb.org/3/collection/{coll_id}"
+                coll_resp = await client.get(coll_url, params={"api_key": settings.TMDB_API_KEY, "language": "en-US"}, headers=headers, timeout=10.0)
+                if coll_resp.status_code == 200:
+                    coll_data = coll_resp.json()
+                    parts = coll_data.get("parts", [])
+                    if isinstance(parts, list):
+                        collection_parts = [
+                            {
+                                "id": p.get("id"),
+                                "title": p.get("title") or p.get("name"),
+                                "release_date": p.get("release_date"),
+                                "poster_path": p.get("poster_path"),
+                                "overview": p.get("overview")
+                            }
+                            for p in parts if isinstance(p, dict)
+                        ]
+            except Exception as coll_err:
+                logger.warning("Failed to fetch collection parts", error=str(coll_err))
+
+        details_data["collection_parts"] = collection_parts
+        details_data["seasons_list"] = extract_seasons_list(details_data)
+
+        # Extract certification
         certification = None
         release_dates = details_data.get("release_dates", {}).get("results", [])
         for rd in release_dates:
@@ -328,6 +398,18 @@ async def fetch_movie_details_by_id(movie_id: int) -> dict:
                     break
         details_data["certification"] = certification
 
+        vote_avg = details_data.get("vote_average") or 0.0
+        vote_cnt = details_data.get("vote_count") or 0
+        pop = details_data.get("popularity") or 0.0
+
+        details_data["vote_average"] = float(vote_avg)
+        details_data["vote_count"] = int(vote_cnt)
+        details_data["popularity"] = float(pop)
+        details_data["trailer_key"] = extract_trailer_key(details_data)
+        details_data["cast"] = extract_cast(details_data)
+        details_data["watch_providers"] = extract_watch_providers(details_data)
+        details_data["similar_movies"] = extract_similar_movies(details_data)
+
         # Store in database cache
         if supabase:
             try:
@@ -339,18 +421,21 @@ async def fetch_movie_details_by_id(movie_id: int) -> dict:
                     "similar": details_data.get("similar"),
                     "release_dates": details_data.get("release_dates"),
                     "backdrop_path": details_data.get("backdrop_path"),
-                    "vote_average": details_data.get("vote_average"),
-                    "vote_count": details_data.get("vote_count"),
-                    "popularity": details_data.get("popularity")
+                    "vote_average": float(vote_avg),
+                    "vote_count": int(vote_cnt),
+                    "popularity": float(pop),
+                    "trailer_key": details_data.get("trailer_key"),
+                    "collection_parts": collection_parts,
+                    "seasons_list": details_data.get("seasons_list"),
                 }
                 supabase.table("movies").upsert({
                     "tmdb_id": details_data.get("id"),
-                    "title": details_data.get("title"),
+                    "title": details_data.get("title") or details_data.get("name"),
                     "overview": details_data.get("overview"),
                     "genres": genres_cache,
-                    "release_date": details_data.get("release_date"),
+                    "release_date": details_data.get("release_date") or details_data.get("first_air_date"),
                     "certification": details_data.get("certification"),
-                    "adult": details_data.get("adult"),
+                    "adult": details_data.get("adult", False),
                     "poster_path": details_data.get("poster_path")
                 }).execute()
             except Exception as cache_err:

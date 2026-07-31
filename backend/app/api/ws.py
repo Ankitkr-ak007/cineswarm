@@ -65,10 +65,15 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                             "similar_movies": extract_similar_movies(movie_metadata),
                             "collection_parts": extract_collection_parts(movie_metadata),
                             "seasons_list": extract_seasons_list(movie_metadata),
+                            "vote_average": movie_metadata.get("vote_average"),
+                            "vote_count": movie_metadata.get("vote_count"),
                         }
                     })
                 except Exception as ex:
                     log.warning("Could not fetch movie details for history load", error=str(ex))
+            
+            db_runs_res = supabase.table("agent_runs").select("*").eq("session_id", session_id).execute()
+            db_runs = db_runs_res.data if db_runs_res.data else []
             
             for run in db_runs:
                 agent_name = run.get("agent_name")
@@ -130,6 +135,8 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                     "similar_movies": extract_similar_movies(movie_metadata),
                     "collection_parts": extract_collection_parts(movie_metadata),
                     "seasons_list": extract_seasons_list(movie_metadata),
+                    "vote_average": movie_metadata.get("vote_average"),
+                    "vote_count": movie_metadata.get("vote_count"),
                 }
             })
         except Exception as ex:

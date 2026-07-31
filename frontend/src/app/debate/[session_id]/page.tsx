@@ -61,6 +61,8 @@ interface MovieMetadata {
   similar_movies?: { id: number; title: string; poster_path: string | null }[];
   collection_parts?: CollectionPart[];
   seasons_list?: SeasonItem[];
+  vote_average?: number;
+  vote_count?: number;
   cosine_similarity?: number;
   match_percentage?: number;
 }
@@ -168,6 +170,12 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
         
         if (data.status === "movie_info") {
           setMovieMetadata(data.movie_metadata);
+          if (data.movie_metadata?.vote_average !== undefined) {
+            setFinalResult(prev => ({
+              ...prev,
+              actual_rating: data.movie_metadata.vote_average
+            }));
+          }
           if (sessionId && data.movie_metadata?.title) {
             saveSessionToHistory({
               id: sessionId as string,
