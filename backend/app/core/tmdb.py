@@ -21,39 +21,54 @@ class MovieNotFoundError(Exception):
 )
 async def fetch_movie_metadata(title: str, year: int | None = None, media_type: str = "all") -> dict:
     """Fetch movie or TV show metadata from TMDB by title and optional year."""
-    # Check cache first
+    # Check cache first with 7-day TTL for freshness
     supabase = get_supabase_client()
     if supabase and not year:
         try:
             res = supabase.table("movies").select("*").ilike("title", title).execute()
             if res.data:
-                genres_raw = movie.get("genres")
-                genres_data = genres_raw if isinstance(genres_raw, dict) else {}
-                genres_list = genres_raw if isinstance(genres_raw, list) else (genres_data.get("genres") if isinstance(genres_data, dict) else [])
+                movie = res.data[0]
+                # Check cache freshness (7 days)
+                from datetime import datetime, timezone, timedelta
+                created_at_str = movie.get("created_at")
+                is_fresh = True
+                if created_at_str:
+                    try:
+                        cached_time = datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
+                        if datetime.now(timezone.utc) - cached_time > timedelta(days=7):
+                            is_fresh = False
+                    except Exception:
+                        pass
                 
-                metadata = {
-                    "id": movie.get("tmdb_id"),
-                    "title": movie.get("title"),
-                    "overview": movie.get("overview"),
-                    "release_date": movie.get("release_date"),
-                    "poster_path": movie.get("poster_path"),
-                    "backdrop_path": genres_data.get("backdrop_path") if isinstance(genres_data, dict) else None,
-                    "credits": genres_data.get("credits") if isinstance(genres_data, dict) else None,
-                    "videos": genres_data.get("videos") if isinstance(genres_data, dict) else None,
-                    "watch/providers": genres_data.get("watch/providers") if isinstance(genres_data, dict) else None,
-                    "similar": genres_data.get("similar") if isinstance(genres_data, dict) else None,
-                    "release_dates": genres_data.get("release_dates") if isinstance(genres_data, dict) else None,
-                    "certification": movie.get("certification"),
-                    "genres": genres_list,
-                    "vote_average": genres_data.get("vote_average") if isinstance(genres_data, dict) and "vote_average" in genres_data else (movie.get("vote_average") or 0.0),
-                    "vote_count": genres_data.get("vote_count") if isinstance(genres_data, dict) and "vote_count" in genres_data else (movie.get("vote_count") or 0),
-                    "popularity": genres_data.get("popularity") if isinstance(genres_data, dict) and "popularity" in genres_data else (movie.get("popularity") or 0.0),
-                    "media_type": genres_data.get("media_type", "movie") if isinstance(genres_data, dict) else "movie",
-                    "number_of_seasons": genres_data.get("number_of_seasons") if isinstance(genres_data, dict) else None,
-                    "number_of_episodes": genres_data.get("number_of_episodes") if isinstance(genres_data, dict) else None,
-                }
-                logger.info("Found cached content in database by title", title=title, id=metadata["id"])
-                return metadata
+                if is_fresh:
+                    genres_raw = movie.get("genres")
+                    genres_data = genres_raw if isinstance(genres_raw, dict) else {}
+                    genres_list = genres_raw if isinstance(genres_raw, list) else (genres_data.get("genres") if isinstance(genres_data, dict) else [])
+                    
+                    metadata = {
+                        "id": movie.get("tmdb_id"),
+                        "title": movie.get("title"),
+                        "overview": movie.get("overview"),
+                        "release_date": movie.get("release_date"),
+                        "poster_path": movie.get("poster_path"),
+                        "backdrop_path": genres_data.get("backdrop_path") if isinstance(genres_data, dict) else None,
+                        "credits": genres_data.get("credits") if isinstance(genres_data, dict) else None,
+                        "videos": genres_data.get("videos") if isinstance(genres_data, dict) else None,
+                        "watch/providers": genres_data.get("watch/providers") if isinstance(genres_data, dict) else None,
+                        "similar": genres_data.get("similar") if isinstance(genres_data, dict) else None,
+                        "release_dates": genres_data.get("release_dates") if isinstance(genres_data, dict) else None,
+                        "certification": movie.get("certification"),
+                        "genres": genres_list,
+                        "vote_average": genres_data.get("vote_average") if isinstance(genres_data, dict) and "vote_average" in genres_data else (movie.get("vote_average") or 0.0),
+                        "vote_count": genres_data.get("vote_count") if isinstance(genres_data, dict) and "vote_count" in genres_data else (movie.get("vote_count") or 0),
+                        "popularity": genres_data.get("popularity") if isinstance(genres_data, dict) and "popularity" in genres_data else (movie.get("popularity") or 0.0),
+                        "media_type": genres_data.get("media_type", "movie") if isinstance(genres_data, dict) else "movie",
+                        "number_of_seasons": genres_data.get("number_of_seasons") if isinstance(genres_data, dict) else None,
+                        "number_of_episodes": genres_data.get("number_of_episodes") if isinstance(genres_data, dict) else None,
+                        "trailer_key": genres_data.get("trailer_key") if isinstance(genres_data, dict) else None,
+                    }
+                    logger.info("Found fresh cached content in database by title", title=title, id=metadata["id"])
+                    return metadata
         except Exception as e:
             logger.warning("Failed to check movies cache by title", error=str(e))
 
@@ -213,15 +228,26 @@ async def fetch_movie_metadata(title: str, year: int | None = None, media_type: 
 
 async def fetch_movie_details_by_id(movie_id: int) -> dict:
     """Fetch full movie details from TMDB by movie ID (with appends)."""
-    # Check cache first
+    # Check cache first with 7-day TTL for freshness
     supabase = get_supabase_client()
     if supabase:
         try:
             res = supabase.table("movies").select("*").eq("tmdb_id", movie_id).execute()
             if res.data:
                 movie = res.data[0]
+                from datetime import datetime, timezone, timedelta
+                created_at_str = movie.get("created_at")
+                is_fresh = True
+                if created_at_str:
+                    try:
+                        cached_time = datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
+                        if datetime.now(timezone.utc) - cached_time > timedelta(days=7):
+                            is_fresh = False
+                    except Exception:
+                        pass
+
                 genres_data = movie.get("genres") or {}
-                if isinstance(genres_data, dict) and "credits" in genres_data:
+                if is_fresh and isinstance(genres_data, dict) and "credits" in genres_data:
                     metadata = {
                         "id": movie.get("tmdb_id"),
                         "title": movie.get("title"),
@@ -239,8 +265,9 @@ async def fetch_movie_details_by_id(movie_id: int) -> dict:
                         "vote_average": genres_data.get("vote_average") if isinstance(genres_data, dict) and "vote_average" in genres_data else (movie.get("vote_average") or 0.0),
                         "vote_count": genres_data.get("vote_count") if isinstance(genres_data, dict) and "vote_count" in genres_data else (movie.get("vote_count") or 0),
                         "popularity": genres_data.get("popularity") if isinstance(genres_data, dict) and "popularity" in genres_data else (movie.get("popularity") or 0.0),
+                        "trailer_key": genres_data.get("trailer_key"),
                     }
-                    logger.info("Found cached movie in database by ID", id=movie_id)
+                    logger.info("Found fresh cached movie in database by ID", id=movie_id)
                     return metadata
         except Exception as e:
             logger.warning("Failed to check movies cache by ID", error=str(e))
