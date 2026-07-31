@@ -147,6 +147,12 @@ async def fetch_movie_metadata(title: str, year: int | None = None, media_type: 
             details_url = f"https://api.themoviedb.org/3/movie/{item_id}"
             append_target = "release_dates,credits,videos,watch/providers,similar"
             
+        details_params = {
+            "api_key": settings.TMDB_API_KEY,
+            "append_to_response": append_target,
+            "language": "en-US"
+        }
+            
         try:
             details_resp = await client.get(details_url, params=details_params, headers=headers, timeout=10.0)
             details_resp.raise_for_status()
