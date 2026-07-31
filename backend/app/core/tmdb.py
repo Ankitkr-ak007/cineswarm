@@ -172,7 +172,7 @@ async def fetch_movie_metadata(title: str, year: int | None = None, media_type: 
         except httpx.HTTPError:
             details_data = top_match
 
-        # Fetch collection parts if part of a movie franchise
+        # Fetch collection parts if part of a movie franchise or discover via franchise search
         collection_parts = []
         belongs_to_coll = details_data.get("belongs_to_collection")
         if isinstance(belongs_to_coll, dict) and belongs_to_coll.get("id"):
@@ -197,11 +197,15 @@ async def fetch_movie_metadata(title: str, year: int | None = None, media_type: 
             except Exception as coll_err:
                 logger.warning("Failed to fetch collection parts", error=str(coll_err))
 
+        normalized_title = details_data.get("title") or details_data.get("name") or details_data.get("original_name") or title
+        
+        # Discover linked franchise parts if collection has < 2 parts
+        collection_parts = await discover_franchise_parts(client, normalized_title, collection_parts, headers)
+
         details_data["collection_parts"] = collection_parts
         details_data["seasons_list"] = extract_seasons_list(details_data)
 
         # Normalize title, release date, certification, ratings & media_type
-        normalized_title = details_data.get("title") or details_data.get("name") or details_data.get("original_name") or title
         normalized_date = details_data.get("release_date") or details_data.get("first_air_date")
         
         vote_avg = details_data.get("vote_average") or top_match.get("vote_average") or 0.0
@@ -381,6 +385,11 @@ async def fetch_movie_details_by_id(movie_id: int) -> dict:
                         ]
             except Exception as coll_err:
                 logger.warning("Failed to fetch collection parts", error=str(coll_err))
+
+        normalized_title = details_data.get("title") or details_data.get("name") or details_data.get("original_name") or ""
+        
+        # Discover linked franchise parts if collection has < 2 parts
+        collection_parts = await discover_franchise_parts(client, normalized_title, collection_parts, headers)
 
         details_data["collection_parts"] = collection_parts
         details_data["seasons_list"] = extract_seasons_list(details_data)
@@ -577,6 +586,69 @@ def extract_seasons_list(movie_metadata: dict) -> list[dict]:
         }
         for s in seasons if isinstance(s, dict) and s.get("season_number") is not None
     ]
+
+import re
+
+async def discover_franchise_parts(client: httpx.AsyncClient, title: str, collection_parts: list[dict], headers: dict) -> list[dict]:
+    """
+    Multi-Tier Franchise Discovery Engine.
+    Ensures that ALL sequels, prequels, parts, and linked entries of any movie, series, or anime are found!
+    """
+    existing_ids = {p.get("id") for p in collection_parts if isinstance(p, dict)}
+    discovered = list(collection_parts)
+
+    if not title:
+        return discovered
+
+    # Clean title to extract root franchise keyword
+    # e.g. "Baahubali 2: The Conclusion" -> "Baahubali"
+    # "Spider-Man: No Way Home" -> "Spider-Man"
+    # "K.G.F: Chapter 2" -> "K.G.F"
+    clean_base = re.split(r'[:\-–—0-9]', title)[0].strip()
+    if len(clean_base) < 3:
+        clean_base = title.split()[0].strip()
+
+    if len(clean_base) >= 3:
+        try:
+            url = "https://api.themoviedb.org/3/search/multi"
+            params = {
+                "api_key": settings.TMDB_API_KEY,
+                "query": clean_base,
+                "include_adult": "false",
+                "language": "en-US",
+                "page": 1
+            }
+            resp = await client.get(url, params=params, headers=headers, timeout=8.0)
+            if resp.status_code == 200:
+                results = resp.json().get("results", [])
+                base_lower = clean_base.lower()
+                for r in results:
+                    if not isinstance(r, dict):
+                        continue
+                    item_id = r.get("id")
+                    if not item_id or item_id in existing_ids:
+                        continue
+                    item_title = r.get("title") or r.get("name") or r.get("original_name") or ""
+                    # Match items containing base title
+                    if base_lower in item_title.lower():
+                        existing_ids.add(item_id)
+                        discovered.append({
+                            "id": item_id,
+                            "title": item_title,
+                            "release_date": r.get("release_date") or r.get("first_air_date"),
+                            "poster_path": r.get("poster_path"),
+                            "overview": r.get("overview")
+                        })
+        except Exception as err:
+            logger.warning("Franchise discovery search warning", error=str(err))
+
+    # Sort parts chronologically by release_date
+    def parse_date(part):
+        d = part.get("release_date")
+        return str(d) if d else "9999-99-99"
+
+    discovered.sort(key=parse_date)
+    return discovered
 
 async def suggest_movies_from_llm(mood: str, genres: list[str], content_mode: str, media_type: str = "all", industry: str = "all", year: int | str | None = None) -> list[str]:
     """Ask LLM to suggest 5 movie or TV show titles fitting mood, genres, media type, film industry, and release year/era."""
