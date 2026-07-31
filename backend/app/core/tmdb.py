@@ -332,12 +332,28 @@ async def fetch_movie_details_by_id(movie_id: int) -> dict:
         return details_data
 
 def extract_cast(movie_metadata: dict) -> list[str]:
-    cast_list = movie_metadata.get("credits", {}).get("cast", [])[:5]
-    return [member.get("name") for member in cast_list if isinstance(member, dict) and member.get("name")]
+    if not isinstance(movie_metadata, dict):
+        return []
+    credits = movie_metadata.get("credits")
+    if not isinstance(credits, dict):
+        return []
+    cast_list = credits.get("cast", [])
+    if not isinstance(cast_list, list):
+        return []
+    return [member.get("name") for member in cast_list[:5] if isinstance(member, dict) and member.get("name")]
 
 def extract_trailer_key(movie_metadata: dict) -> str | None:
-    videos = movie_metadata.get("videos", {}).get("results", [])
-    for v in videos:
+    if not isinstance(movie_metadata, dict):
+        return None
+    if movie_metadata.get("trailer_key"):
+        return str(movie_metadata.get("trailer_key"))
+    videos = movie_metadata.get("videos")
+    if not isinstance(videos, dict):
+        return None
+    results = videos.get("results", [])
+    if not isinstance(results, list):
+        return None
+    for v in results:
         if isinstance(v, dict) and v.get("site") == "YouTube" and v.get("type") in ["Trailer", "Teaser"]:
             return v.get("key")
     return None
@@ -368,18 +384,25 @@ def _build_provider_link(provider_name: str, movie_title: str, tmdb_link: str | 
         return f"https://www.google.com/search?q=watch+{query}+on+{quote_plus(provider_name)}"
 
 def extract_watch_providers(movie_metadata: dict, region: str = "IN") -> list[dict]:
-    results = movie_metadata.get("watch/providers", {}).get("results", {})
-    region_data = results.get(region, {})
+    if not isinstance(movie_metadata, dict):
+        return []
+    providers_obj = movie_metadata.get("watch/providers") or movie_metadata.get("watch_providers")
+    if not isinstance(providers_obj, dict):
+        return []
+    results = providers_obj.get("results")
+    if not isinstance(results, dict):
+        return []
+    region_data = results.get(region)
+    if not isinstance(region_data, dict):
+        return []
     tmdb_link = region_data.get("link")
     movie_title = movie_metadata.get("title", "")
     
-    # Combine flatrate (subscription), rent, buy, and free options for region
-    raw_providers = (
-        region_data.get("flatrate", []) + 
-        region_data.get("rent", []) + 
-        region_data.get("buy", []) + 
-        region_data.get("free", [])
-    )
+    flatrate = region_data.get("flatrate") if isinstance(region_data.get("flatrate"), list) else []
+    rent = region_data.get("rent") if isinstance(region_data.get("rent"), list) else []
+    buy = region_data.get("buy") if isinstance(region_data.get("buy"), list) else []
+    free = region_data.get("free") if isinstance(region_data.get("free"), list) else []
+    raw_providers = flatrate + rent + buy + free
     
     output = []
     seen_names = set()
@@ -399,14 +422,21 @@ def extract_watch_providers(movie_metadata: dict, region: str = "IN") -> list[di
     return output
 
 def extract_similar_movies(movie_metadata: dict) -> list[dict]:
-    similar = movie_metadata.get("similar", {}).get("results", [])[:6]
+    if not isinstance(movie_metadata, dict):
+        return []
+    similar_obj = movie_metadata.get("similar") or movie_metadata.get("similar_movies")
+    if not isinstance(similar_obj, dict):
+        return []
+    similar = similar_obj.get("results")
+    if not isinstance(similar, list):
+        return []
     return [
         {
             "id": m.get("id"),
             "title": m.get("title") or m.get("name") or m.get("original_name"),
             "poster_path": m.get("poster_path")
         }
-        for m in similar if isinstance(m, dict)
+        for m in similar[:6] if isinstance(m, dict)
     ]
 
 async def suggest_movies_from_llm(mood: str, genres: list[str], content_mode: str, media_type: str = "all", industry: str = "all", year: int | str | None = None) -> list[str]:
