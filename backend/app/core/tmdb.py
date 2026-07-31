@@ -147,18 +147,39 @@ async def fetch_movie_metadata(title: str, year: int | None = None, media_type: 
             details_url = f"https://api.themoviedb.org/3/movie/{item_id}"
             append_target = "release_dates,credits,videos,watch/providers,similar"
             
-        details_params = {
-            "api_key": settings.TMDB_API_KEY,
-            "append_to_response": append_target,
-            "language": "en-US"
-        }
-        
         try:
             details_resp = await client.get(details_url, params=details_params, headers=headers, timeout=10.0)
             details_resp.raise_for_status()
             details_data = details_resp.json()
         except httpx.HTTPError:
             details_data = top_match
+
+        # Fetch collection parts if part of a movie franchise
+        collection_parts = []
+        belongs_to_coll = details_data.get("belongs_to_collection")
+        if isinstance(belongs_to_coll, dict) and belongs_to_coll.get("id"):
+            coll_id = belongs_to_coll.get("id")
+            try:
+                coll_url = f"https://api.themoviedb.org/3/collection/{coll_id}"
+                coll_resp = await client.get(coll_url, params={"api_key": settings.TMDB_API_KEY, "language": "en-US"}, headers=headers, timeout=10.0)
+                if coll_resp.status_code == 200:
+                    coll_data = coll_resp.json()
+                    parts = coll_data.get("parts", [])
+                    if isinstance(parts, list):
+                        collection_parts = [
+                            {
+                                "id": p.get("id"),
+                                "title": p.get("title") or p.get("name"),
+                                "release_date": p.get("release_date"),
+                                "poster_path": p.get("poster_path"),
+                                "overview": p.get("overview")
+                            }
+                            for p in parts if isinstance(p, dict)
+                        ]
+            except Exception as coll_err:
+                logger.warning("Failed to fetch collection parts", error=str(coll_err))
+
+        details_data["collection_parts"] = collection_parts
 
         # Normalize title, release date, certification & media_type
         normalized_title = details_data.get("title") or details_data.get("name") or details_data.get("original_name") or title
@@ -437,6 +458,33 @@ def extract_similar_movies(movie_metadata: dict) -> list[dict]:
             "poster_path": m.get("poster_path")
         }
         for m in similar[:6] if isinstance(m, dict)
+    ]
+
+def extract_collection_parts(movie_metadata: dict) -> list[dict]:
+    if not isinstance(movie_metadata, dict):
+        return []
+    parts = movie_metadata.get("collection_parts")
+    if isinstance(parts, list):
+        return parts
+    return []
+
+def extract_seasons_list(movie_metadata: dict) -> list[dict]:
+    if not isinstance(movie_metadata, dict):
+        return []
+    seasons = movie_metadata.get("seasons")
+    if not isinstance(seasons, list):
+        return []
+    return [
+        {
+            "id": s.get("id"),
+            "name": s.get("name"),
+            "season_number": s.get("season_number"),
+            "episode_count": s.get("episode_count"),
+            "air_date": s.get("air_date"),
+            "poster_path": s.get("poster_path"),
+            "overview": s.get("overview")
+        }
+        for s in seasons if isinstance(s, dict) and s.get("season_number") is not None
     ]
 
 async def suggest_movies_from_llm(mood: str, genres: list[str], content_mode: str, media_type: str = "all", industry: str = "all", year: int | str | None = None) -> list[str]:

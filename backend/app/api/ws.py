@@ -8,6 +8,8 @@ from app.core.tmdb import (
     extract_trailer_key,
     extract_watch_providers,
     extract_similar_movies,
+    extract_collection_parts,
+    extract_seasons_list,
     fetch_movie_details_by_id,
 )
 
@@ -61,6 +63,8 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                             "trailer_key": extract_trailer_key(movie_metadata),
                             "watch_providers": extract_watch_providers(movie_metadata),
                             "similar_movies": extract_similar_movies(movie_metadata),
+                            "collection_parts": extract_collection_parts(movie_metadata),
+                            "seasons_list": extract_seasons_list(movie_metadata),
                         }
                     })
                 except Exception as ex:
@@ -124,6 +128,8 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                     "trailer_key": extract_trailer_key(movie_metadata),
                     "watch_providers": extract_watch_providers(movie_metadata),
                     "similar_movies": extract_similar_movies(movie_metadata),
+                    "collection_parts": extract_collection_parts(movie_metadata),
+                    "seasons_list": extract_seasons_list(movie_metadata),
                 }
             })
         except Exception as ex:
