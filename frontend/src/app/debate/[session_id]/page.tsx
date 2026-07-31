@@ -27,6 +27,24 @@ interface FinalResult {
   explanation?: string;
 }
 
+interface CollectionPart {
+  id: number;
+  title: string;
+  release_date?: string;
+  poster_path?: string | null;
+  overview?: string;
+}
+
+interface SeasonItem {
+  id: number;
+  name: string;
+  season_number: number;
+  episode_count?: number;
+  air_date?: string;
+  poster_path?: string | null;
+  overview?: string;
+}
+
 interface MovieMetadata {
   id?: number;
   title?: string;
@@ -41,6 +59,8 @@ interface MovieMetadata {
   trailer_key?: string | null;
   watch_providers?: { name: string; logo_path: string | null; link?: string | null }[];
   similar_movies?: { id: number; title: string; poster_path: string | null }[];
+  collection_parts?: CollectionPart[];
+  seasons_list?: SeasonItem[];
   cosine_similarity?: number;
   match_percentage?: number;
 }
@@ -583,6 +603,130 @@ function DebateViewInner({ sessionId }: { sessionId: string }) {
                 </CardContent>
               </Card>
             )}
+          </div>
+        )}
+
+        {/* Movie Franchise Sequels & Prequels Navigator */}
+        {movieMetadata?.collection_parts && movieMetadata.collection_parts.length > 1 && (
+          <div className="space-y-4 pt-4 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-black text-purple-600 dark:text-purple-400 uppercase tracking-widest pl-1 flex items-center gap-2">
+                <span>🎬</span>
+                <span>Franchise Parts & Sequels</span>
+              </h3>
+              <span className="text-[11px] font-bold text-slate-400">
+                {movieMetadata.collection_parts.length} Movies in Collection
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3.5">
+              {movieMetadata.collection_parts.map((part, idx) => (
+                <div 
+                  key={idx}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleRecommendSimilar(part.title)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleRecommendSimilar(part.title);
+                    }
+                  }}
+                  className="group cursor-pointer space-y-2 border border-purple-500/20 dark:border-purple-500/30 bg-purple-50/30 dark:bg-purple-950/20 p-2.5 rounded-2xl hover:border-purple-500 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300 transform hover:-translate-y-1"
+                >
+                  <div className="aspect-[2/3] w-full rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 relative shadow-md">
+                    {part.poster_path ? (
+                      <Image 
+                        src={`https://image.tmdb.org/t/p/w300${part.poster_path}`} 
+                        alt={part.title}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        sizes="(max-width: 640px) 50vw, 150px"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 p-2 text-center bg-slate-900">
+                        <span className="text-2xl">🍿</span>
+                        <span className="text-[10px] font-bold mt-1">No Poster</span>
+                      </div>
+                    )}
+                    {part.release_date && (
+                      <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-md bg-slate-950/80 backdrop-blur-md text-[9px] font-black text-white">
+                        {part.release_date.split("-")[0]}
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs font-black text-slate-900 dark:text-white truncate text-center group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                    {part.title}
+                  </p>
+                  <p className="text-[10px] font-bold text-center text-purple-600 dark:text-purple-400">
+                    Analyze Part →
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* TV Series & Anime Seasons Navigator */}
+        {movieMetadata?.seasons_list && movieMetadata.seasons_list.length > 0 && (
+          <div className="space-y-4 pt-4 animate-fade-in">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest pl-1 flex items-center gap-2">
+                <span>📺</span>
+                <span>Seasons & Series Parts</span>
+              </h3>
+              <span className="text-[11px] font-bold text-slate-400">
+                {movieMetadata.seasons_list.length} Seasons Available
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3.5">
+              {movieMetadata.seasons_list.map((season, idx) => (
+                <div 
+                  key={idx}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleRecommendSimilar(`${movieMetadata.title} ${season.name || `Season ${season.season_number}`}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      handleRecommendSimilar(`${movieMetadata.title} ${season.name || `Season ${season.season_number}`}`);
+                    }
+                  }}
+                  className="group cursor-pointer space-y-2 border border-blue-500/20 dark:border-blue-500/30 bg-blue-50/30 dark:bg-blue-950/20 p-2.5 rounded-2xl hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 transform hover:-translate-y-1"
+                >
+                  <div className="aspect-[2/3] w-full rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 relative shadow-md">
+                    {season.poster_path ? (
+                      <Image 
+                        src={`https://image.tmdb.org/t/p/w300${season.poster_path}`} 
+                        alt={season.name}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        sizes="(max-width: 640px) 50vw, 150px"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 p-2 text-center bg-slate-900">
+                        <span className="text-2xl">📺</span>
+                        <span className="text-[10px] font-bold mt-1">Season {season.season_number}</span>
+                      </div>
+                    )}
+                    {season.episode_count !== undefined && (
+                      <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-md bg-slate-950/80 backdrop-blur-md text-[9px] font-black text-white">
+                        {season.episode_count} Eps
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs font-black text-slate-900 dark:text-white truncate text-center group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                    {season.name || `Season ${season.season_number}`}
+                  </p>
+                  {season.air_date && (
+                    <p className="text-[10px] font-medium text-center text-slate-500 dark:text-slate-400">
+                      {season.air_date.split("-")[0]}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
